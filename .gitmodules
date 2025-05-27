@@ -1,7 +1,6 @@
 [submodule "Chart"]
 	path = Chart
 	url = git@github.com:pusong22/Chart.git
-	branch = main
 [submodule "edflib"]
 	path = edflib
 	url = git@github.com:pusong22/edflib.git
