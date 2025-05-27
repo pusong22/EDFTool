@@ -1,0 +1,98 @@
+<#@ template debug="false" hostspecific="true" language="C#" #>
+<#@ output extension=".cs" #>
+using System.Runtime.InteropServices;
+
+namespace EDFLibSharp
+{
+    internal static class NativeMethod
+    {
+    <#= GenerateMethods() #>
+    }
+}
+
+<#+
+    // 定义方法描述结构
+    private class MethodDefinition
+    {
+        public string Name;
+        public string EntryPoint;
+        public string ReturnType;
+        public string[] Parameters;
+        public string CallingConvention;
+    }
+
+    // 定义DLL路径常量
+    private const string DllPath = @"../edflib";
+
+    // 生成所有方法
+    private string GenerateMethods()
+    {
+        var methods = new[]
+        {
+            new MethodDefinition 
+            {
+                Name = "EdfOpen",
+                EntryPoint = "edf_open",
+                ReturnType = "IntPtr",
+                Parameters = new[] { "string filepath" },
+                CallingConvention = "CallingConvention.Cdecl"
+            },
+            new MethodDefinition 
+            {
+                Name = "EdfClose",
+                EntryPoint = "edf_close",
+                ReturnType = "int",
+                Parameters = new[] { "IntPtr handle" },
+                CallingConvention = "CallingConvention.Cdecl"
+            },
+            new MethodDefinition 
+            {
+                Name = "EdfReadHeaderInfo",
+                EntryPoint = "edf_read_header_info",
+                ReturnType = "int",
+                Parameters = new[] { "IntPtr handle", "IntPtr ptr" },
+                CallingConvention = "CallingConvention.Cdecl"
+            },
+            new MethodDefinition 
+            {
+                Name = "EdfReadSignalInfo",
+                EntryPoint = "edf_read_signal_info",
+                ReturnType = "int",
+                Parameters = new[] { "IntPtr handle", "IntPtr ptr" },
+                CallingConvention = "CallingConvention.Cdecl"
+            },
+            new MethodDefinition 
+            {
+                Name = "EdfReadSignalData",
+                EntryPoint = "edf_read_signal_data",
+                ReturnType = "int",
+                Parameters = new[] 
+                {
+                    "IntPtr hadnle",
+                    "IntPtr ptr",
+                    "uint signalIndex",
+                    "uint startRecord = 0",
+                    "uint recordCount = 0"
+                },
+                CallingConvention = "CallingConvention.Cdecl"
+            }
+        };
+
+        var output = new System.Text.StringBuilder();
+        foreach (var method in methods)
+        {
+            output.AppendLine(GenerateDllImportMethod(method));
+        }
+        return output.ToString();
+    }
+
+    // 生成单个方法
+    private string GenerateDllImportMethod(MethodDefinition method)
+    {
+        var parameters = string.Join(",\r\n        ", method.Parameters);
+        return $@"
+        [DllImport(""{DllPath}"", EntryPoint = ""{method.EntryPoint}"", CallingConvention = {method.CallingConvention})]
+        internal static extern {method.ReturnType} {method.Name}(
+            {parameters});";
+    }    
+#>
