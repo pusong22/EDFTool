@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+    <PropertyGroup>
+        <langVersion>latest</langVersion>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <PackageOutputPath>D:\.localnugetpackages</PackageOutputPath>
+        <Authors>pusong</Authors>
+    </PropertyGroup>
+ </Project>
