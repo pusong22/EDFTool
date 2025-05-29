@@ -87,7 +87,7 @@ public partial class FileViewModel : ObservableObject
         bool? result = dialog.ShowDialog();
         if (result is not null && result.Value)
         {
-           string selectedFilePath = dialog.FileName;
+            string selectedFilePath = dialog.FileName;
 
             Debug.WriteLine($"Selected File: {selectedFilePath}");
 

@@ -6,8 +6,4 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
-    <PropertyGroup>
-        <PackageOutputPath>D:\.localnugetpackages</PackageOutputPath>
-        <Authors>pusong</Authors>
-    </PropertyGroup>
  </Project>
