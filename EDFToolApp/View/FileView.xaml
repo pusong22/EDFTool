@@ -7,6 +7,74 @@
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
 
+    <UserControl.Resources>
+        <Style x:Key="commonListBoxItemStyle" TargetType="ListBoxItem">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Margin" Value="5"/>
+            <Setter Property="Padding" Value="5"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="BorderBrush" Value="Black"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                Margin="{TemplateBinding Margin}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <!--<Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="Red"/>
+                </Trigger>
+            </Style.Triggers>-->
+        </Style>
+
+        <DataTemplate x:Key="RecentFileItemTemplate">
+            <Button Background="Transparent"
+                    BorderThickness="0"
+                    HorizontalContentAlignment="Stretch"
+                    HorizontalAlignment="Stretch"
+                    Command="{Binding DataContext.OpenFileCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                    CommandParameter="{Binding}">
+                <StackPanel>
+                    <Grid Margin="0,0,0,5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" 
+                                   Text="{Binding Title}" 
+                                   FontWeight="Bold" 
+                                   FontSize="14"/>
+                        <TextBlock Grid.Column="1" 
+                                   Text="{Binding AccessedTime, StringFormat='{}{0:yyyy/MM/dd HH:mm}'}" 
+                                   HorizontalAlignment="Right" 
+                                   FontSize="10" 
+                                   Foreground="Gray"/>
+                    </Grid>
+                    <TextBlock Text="{Binding SubTitle}" Foreground="Gray" FontSize="10"/>
+                </StackPanel>
+            </Button>
+        </DataTemplate>
+
+        <DataTemplate x:Key="ActionItemTemplate">
+            <Button Background="Transparent"
+                    BorderThickness="0"
+                    Command="{Binding DataContext.BrowserFileCommand, RelativeSource={RelativeSource AncestorType=ListBox}}">
+                <StackPanel>
+                    <TextBlock Text="{Binding Title}" Foreground="DodgerBlue" FontWeight="Bold" FontSize="14"/>
+                    <TextBlock Text="{Binding Description}" Foreground="Gray" FontSize="12"/>
+                </StackPanel>
+            </Button>
+        </DataTemplate>
+    </UserControl.Resources>
+    
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
@@ -14,80 +82,25 @@
         </Grid.ColumnDefinitions>
 
         <!-- Recent Files Panel -->
-        <ScrollViewer Grid.Column="0" Margin="10" VerticalScrollBarVisibility="Auto"
+        <ScrollViewer Grid.Column="0" Margin="10" 
+                      VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled">
             <ListBox ItemsSource="{Binding RecentFiles}" 
-                     BorderThickness="0">
-                <ListBox.ItemContainerStyle>
-                    <Style TargetType="ListBoxItem">
-                        <Setter Property="Background" Value="White"/>
-                        <Setter Property="Margin" Value="0,5"/>
-                        <Setter Property="Padding" Value="10"/>
-                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                        <Setter Property="Cursor" Value="Hand"/>
-
-                        <Style.Triggers>
-                            <!-- 鼠标悬停时改变背景 -->
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="AliceBlue"/>
-                            </Trigger>
-                        </Style.Triggers>
-                    </Style>
-                </ListBox.ItemContainerStyle>
-                <ListBox.ItemTemplate>
-                    <DataTemplate>
-                        <StackPanel>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="auto"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="{Binding Title}" FontWeight="Bold" FontSize="14"/>
-                                <TextBlock Grid.Column="1" Text="{Binding AccessedTime, StringFormat='{}{0:yyyy/MM/dd HH:mm}'}" HorizontalAlignment="Right" FontSize="10" Foreground="DarkGray"/>
-                            </Grid>
-                            <TextBlock Text="{Binding SubTitle}" Foreground="Gray" FontSize="12"/>
-                        </StackPanel>
-                    </DataTemplate>
-                </ListBox.ItemTemplate>
-            </ListBox>
+                     BorderThickness="0"
+                     SelectionMode="Single"
+                     ItemContainerStyle="{StaticResource commonListBoxItemStyle}"
+                     ItemTemplate="{StaticResource RecentFileItemTemplate}"/>
         </ScrollViewer>
 
         <!-- Get Started Panel -->
-        <ScrollViewer Grid.Column="1" Margin="10" VerticalScrollBarVisibility="Auto"
+        <ScrollViewer Grid.Column="1" Margin="10" 
+                      VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled">
             <ListBox ItemsSource="{Binding ActionItems}"
-                     BorderThickness="0">
-                <ListBox.ItemContainerStyle>
-                    <Style TargetType="ListBoxItem">
-                        <Setter Property="Background" Value="LightGray"/>
-                        <Setter Property="Margin" Value="0,5"/>
-                        <Setter Property="Padding" Value="10"/>
-                        <Setter Property="HorizontalContentAlignment" Value="Left"/>
-                        <Setter Property="Cursor" Value="Hand"/>
-
-                        <Style.Triggers>
-                            <!-- 鼠标悬停时改变背景 -->
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="AliceBlue"/>
-                            </Trigger>
-                        </Style.Triggers>
-                    </Style>
-                </ListBox.ItemContainerStyle>
-                <ListBox.ItemTemplate>
-                    <DataTemplate>
-                        <Button 
-                                Margin="0"
-                                Padding="0"
-                                Command="{Binding OpenFile}" 
-                                CommandParameter="{Binding}">
-                            <StackPanel>
-                                <TextBlock Text="{Binding Title}" Foreground="DodgerBlue" FontWeight="Bold" FontSize="14"/>
-                                <TextBlock Text="{Binding Description}" Foreground="Gray" FontSize="12"/>
-                            </StackPanel>
-                        </Button>
-                    </DataTemplate>
-                </ListBox.ItemTemplate>
-            </ListBox>
+                     BorderThickness="0"
+                     SelectionMode="Single"
+                     ItemContainerStyle="{StaticResource commonListBoxItemStyle}"
+                     ItemTemplate="{StaticResource ActionItemTemplate}"/>
         </ScrollViewer>
     </Grid>
 </UserControl>

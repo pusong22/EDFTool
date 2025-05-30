@@ -5,5 +5,5 @@ namespace EDFToolApp.ViewModel;
 public partial class MainViewModel : ObservableObject
 {
     [ObservableProperty]
-    private FileViewModel _fileViewModel = new ();
+    private FileViewModel _fileViewModel = new();
 }
