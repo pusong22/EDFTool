@@ -2,7 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace EDFToolApp.ViewModel;
 
-public partial class RecentFileItem : ObservableObject
+public partial class RecentFileItemViewModel : BaseViewModel
 {
     [ObservableProperty]
     private string? title;

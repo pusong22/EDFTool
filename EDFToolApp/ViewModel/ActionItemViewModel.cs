@@ -2,7 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace EDFToolApp.ViewModel;
 
-public partial class ActionItem : ObservableObject
+public partial class ActionItemViewModel : BaseViewModel
 {
     [ObservableProperty]
     private string? title;

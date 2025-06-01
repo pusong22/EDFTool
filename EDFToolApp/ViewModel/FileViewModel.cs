@@ -1,83 +1,53 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using EDFToolApp.Service;
+using EDFToolApp.Store;
 using Microsoft.Win32;
+using Model;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Windows;
 
 namespace EDFToolApp.ViewModel;
 
-public partial class FileViewModel : ObservableObject
+public partial class FileViewModel(
+    FileDbService fileDbService,
+    EDFStore edfStore) : BaseViewModel
 {
     [ObservableProperty]
-    private ObservableCollection<RecentFileItem> _recentFiles = [];
+    private ObservableCollection<RecentFileItemViewModel> _recentFiles = [];
 
     [ObservableProperty]
-    private ObservableCollection<ActionItem> _actionItems = [];
-
-    public FileViewModel()
-    {
-        RecentFiles = [
-            new RecentFileItem {
-                Title = "Project Alpha Report",
-                SubTitle = "Detailed analysis of Q1 performance",
-                AccessedTime = DateTime.Now.AddHours(-2),
-                FilePath = "C:\\Temp\\ProjectAlphaReport.edf"
-            },
-        ];
-
-        ActionItems = [
-            new ActionItem{
-                Title = "Open New File",
-                Description = "Browse and open an EDF file.."
-            }
-        ];
-    }
-
-    private void LoadFile(string filePath)
-    {
-
-    }
-
-    private void AddToRecentFiles(string filePath)
-    {
-        if (!RecentFiles.Any(f => f.FilePath.Equals(filePath, StringComparison.OrdinalIgnoreCase)))
+    private ObservableCollection<ActionItemViewModel> _actionItems = [
+        new ActionItemViewModel
         {
-            RecentFiles.Insert(0, new RecentFileItem
-            {
-                Title = System.IO.Path.GetFileNameWithoutExtension(filePath),
-                SubTitle = filePath,
-                AccessedTime = DateTime.Now,
-                FilePath = filePath
-            });
-            while (RecentFiles.Count > 10)
-            {
-                RecentFiles.RemoveAt(RecentFiles.Count - 1);
-            }
-        }
-        else
+            Title = "Browser File",
+            Description = "Browse for a file to open",
+        },
+    ];
+
+
+    [RelayCommand]
+    private async Task OpenFile(RecentFileItemViewModel recentFileItem)
+    {
+        string? path = recentFileItem.FilePath;
+
+        if (path is null)
+            return;
+
+        // update File accessTime
+        var item = await fileDbService.Get(path);
+        if (item is not null)
         {
-            var existingItem = RecentFiles.First(f => f.FilePath.Equals(filePath, StringComparison.OrdinalIgnoreCase));
-            RecentFiles.Remove(existingItem);
-            RecentFiles.Insert(0, existingItem);
-            existingItem.AccessedTime = DateTime.Now;
+            item.AccessedTime = DateTime.Now;
+            await fileDbService.Update(item);
         }
+
+        OpenFile(path);
     }
 
     [RelayCommand]
-    private void OpenFile(RecentFileItem? recentFileItem)
+    private async Task BrowserFile()
     {
-        Debug.WriteLine($"Click File: {recentFileItem?.FilePath}");
-        MessageBox.Show(recentFileItem?.FilePath);
-
-        //...
-    }
-
-    [RelayCommand]
-    private void BrowserFile()
-    {
-        Debug.WriteLine($"Executing WIN32 OPENFILEDIALOG...");
-
         var dialog = new OpenFileDialog
         {
             Title = "Select an EDF File",
@@ -85,23 +55,65 @@ public partial class FileViewModel : ObservableObject
         };
 
         bool? result = dialog.ShowDialog();
-        if (result is not null && result.Value)
-        {
-            string selectedFilePath = dialog.FileName;
-
-            Debug.WriteLine($"Selected File: {selectedFilePath}");
-
-            DateTime currentDateTime = DateTime.Now;
-
-            LoadFile(selectedFilePath);
-
-            AddToRecentFiles(selectedFilePath);
-
-        }
-        else
+        if (result is null || result.Value == false)
         {
             Debug.WriteLine($"File selection cancelled");
         }
+
+        string selectedFilePath = dialog.FileName;
+
+        var item = AddToRecentFiles(selectedFilePath);
+
+        var model = await fileDbService.Get(selectedFilePath);
+        if (model is null)
+        {
+            await fileDbService.Create(new RecentFileModel()
+            {
+                FilePath = item.FilePath,
+                AccessedTime = item.AccessedTime,
+            });
+        }
+        else
+        {
+            model.AccessedTime = item.AccessedTime;
+            await fileDbService.Update(model);
+        }
+
+        OpenFile(selectedFilePath);
     }
 
+    private void OpenFile(string filePath)
+    {
+        edfStore.OpenFile(filePath);
+    }
+
+    private RecentFileItemViewModel AddToRecentFiles(string filePath)
+    {
+        if (!RecentFiles.Any(f => filePath.Equals(f.FilePath, StringComparison.OrdinalIgnoreCase)))
+        {
+            var newItem = new RecentFileItemViewModel
+            {
+                Title = System.IO.Path.GetFileName(filePath),
+                SubTitle = filePath,
+                AccessedTime = DateTime.Now,
+                FilePath = filePath
+            };
+            RecentFiles.Insert(0, newItem);
+            while (RecentFiles.Count > 10)
+            {
+                RecentFiles.RemoveAt(RecentFiles.Count - 1);
+            }
+
+            return newItem;
+        }
+        else
+        {
+            var existingItem = RecentFiles.First(f => filePath.Equals(f.FilePath, StringComparison.OrdinalIgnoreCase));
+            RecentFiles.Remove(existingItem);
+            RecentFiles.Insert(0, existingItem);
+            existingItem.AccessedTime = DateTime.Now;
+
+            return existingItem;
+        }
+    }
 }

@@ -1,6 +1,6 @@
 using EDFLibSharp;
 
-namespace EdfBrowser.Services
+namespace Service
 {
     public class EDFService
     {
