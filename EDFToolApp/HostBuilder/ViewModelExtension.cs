@@ -1,5 +1,3 @@
-using EDFToolApp.Service;
-using EDFToolApp.Store;
 using EDFToolApp.ViewModel;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -12,7 +10,7 @@ public static class ViewModelExtension
         return hostBuilder.ConfigureServices(s =>
         {
             s.AddSingleton<MainViewModel>();
-            s.AddSingleton<FileViewModel>();
+            s.AddSingleton<StartupWindowViewModel>();
         });
     }
 }

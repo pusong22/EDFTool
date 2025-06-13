@@ -4,19 +4,29 @@ namespace EDFLibSharp
 {
     public sealed partial class EDFReader : IDisposable
     {
-        private readonly struct SignalTransform(double pMax, double pMin, int dMax, int dMin)
+        private readonly struct SignalTransform
         {
+            public SignalTransform(double pMax, double pMin, int dMax, int dMin)
+            {
+                PMin = pMin;
+                PMax = pMax;
+                DMin = dMin;
+                DMax = dMax;
+                Unit = (PMax - PMin) / (DMax - DMin);
+                Offset = (PMax / Unit - DMax);
+            }
+
             public SignalTransform(SignalInfo info) : this(
                 info._physicalMax, info._physicalMin,
                 info._digitalMax, info._digitalMin)
             { }
 
-            public double PMin { get; } = pMin;
-            public double PMax { get; } = pMax;
-            public int DMin { get; } = dMin;
-            public int DMax { get; } = dMax;
-            public double Unit => (PMax - PMin) / (DMax - DMin);
-            public double Offset => (PMax / Unit - DMax);
+            public double PMin { get; }
+            public double PMax { get; }
+            public int DMin { get; }
+            public int DMax { get; }
+            public double Unit { get; }
+            public double Offset { get; }
         }
 
         private IntPtr _handle;
@@ -116,7 +126,7 @@ namespace EDFLibSharp
                 throw new ArgumentNullException(nameof(dataRecord));
 
             ReadDigitalData(dataRecord);
-            ToPhsyicalVal(dataRecord);
+            ToPhysicalVal(dataRecord);
         }
 
         public void ReadDigitalData(DataRecord dataRecord)
@@ -163,20 +173,25 @@ namespace EDFLibSharp
             }
         }
 
-        private void ToPhsyicalVal(DataRecord dataRecord)
+        private void ToPhysicalVal(DataRecord dataRecord)
         {
             if (_signalTransforms is null) return;
 
             var transform = _signalTransforms[dataRecord.Index];
-            for (int i = 0; i < dataRecord.Length; i++)
+            var buffer = dataRecord.Buffer;
+            int count = buffer.Count;
+            double dMin = transform.DMin, dMax = transform.DMax;
+            double unit = transform.Unit, offset = transform.Offset;
+            
+            for (int i = 0; i < count; i++)
             {
-                double raw = dataRecord.Buffer[i];
-                raw = Math.Min(raw, transform.DMax);
-                raw = Math.Max(raw, transform.DMin);
-
-                dataRecord.Buffer[i] = transform.Unit * (raw + transform.Offset);
-                // buf[i] = (raw - dataInfo.DMin) * dataInfo.Unit + dataInfo.PMin;
+                double raw = buffer[i];
+                if (raw > dMax) raw = dMax;
+                if (raw < dMin) raw = dMin;
+                buffer[i] = unit * (raw + offset);
             }
+
+            // buf[i] = (raw - dataInfo.DMin) * dataInfo.Unit + dataInfo.PMin;
         }
 
 

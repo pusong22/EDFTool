@@ -1,11 +1,9 @@
 using EDFToolApp.EFDbContext;
 using EDFToolApp.HostBuilder;
-using EDFToolApp.Router;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System.Windows;
-using System.Windows.Navigation;
 
 namespace EDFToolApp;
 /// <summary>
@@ -29,6 +27,9 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
+        _host.Start();
+
+
         var provider = _host.Services;
 
 
@@ -39,20 +40,25 @@ public partial class App : Application
             context.Database.Migrate();
         }
 #endif
+        //var router = provider.GetRequiredService<ViewModelRouter>();
+        //router.NavigateTo(RouterName.FileView);
 
-        var router = provider.GetRequiredService<ViewModelRouter>();
-        router.NavigateTo(RouterName.FileView);
+        Current.MainWindow = provider.GetRequiredService<MainWindow>();
 
-        var window = provider.GetRequiredService<MainWindow>();
-        window.Show();
-
-        _host.Start();
+        bool? dialogResult = provider.GetRequiredService<StartupWindow>().ShowDialog();
+        if (dialogResult == true)
+        {
+            Current.MainWindow.Show();
+        }
+        else
+        {
+            Shutdown();
+        }
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
         base.OnExit(e);
-
         _host.StopAsync();
 
         _host.Dispose();

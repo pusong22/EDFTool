@@ -4,18 +4,13 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:EDFToolApp"
-        xmlns:vm="clr-namespace:EDFToolApp.ViewModel"
-        xmlns:vw="clr-namespace:EDFToolApp.View"
         mc:Ignorable="d"
-        Title="EDFToolApp" Height="450" Width="800">
+        Title="EDFToolApp" Height="450" Width="800"
+        WindowState="Maximized">
+
 
     <Grid>
-        <Grid.Resources>
-            <DataTemplate DataType="{x:Type vm:FileViewModel}">
-                <vw:FileView />
-            </DataTemplate>
-        </Grid.Resources>
-        
-        <ContentControl Content="{Binding CurrentViewModel}"/>
+        <TextBlock Text="测试">
+        </TextBlock>
     </Grid>
 </Window>

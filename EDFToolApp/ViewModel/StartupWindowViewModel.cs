@@ -1,18 +1,20 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
+using EDFToolApp.Message;
 using EDFToolApp.Service;
 using EDFToolApp.Store;
 using Microsoft.Win32;
 using Model;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 
 namespace EDFToolApp.ViewModel;
-
-public partial class FileViewModel(
+public partial class StartupWindowViewModel(
     FileDbService fileDbService,
     EDFStore edfStore) : BaseViewModel
 {
+    private readonly OpenFileDialog _openFileDialog = new();
+
     [ObservableProperty]
     private ObservableCollection<RecentFileItemViewModel> _recentFiles = [];
 
@@ -25,13 +27,11 @@ public partial class FileViewModel(
         },
     ];
 
-
     [RelayCommand]
     private async Task OpenFile(RecentFileItemViewModel recentFileItem)
     {
-        string? path = recentFileItem.FilePath;
-
-        if (path is null)
+        var path = recentFileItem.FilePath;
+        if (string.IsNullOrWhiteSpace(path))
             return;
 
         // update File accessTime
@@ -48,26 +48,18 @@ public partial class FileViewModel(
     [RelayCommand]
     private async Task BrowserFile()
     {
-        var dialog = new OpenFileDialog
-        {
-            Title = "Select an EDF File",
-            Filter = "EDF Files (*.edf)|*.edf|All Files (*.*)|*.*"
-        };
+        _openFileDialog.Title = "Select an EDF File";
+        _openFileDialog.Filter = "EDF Files (*.edf)|*.edf|All Files (*.*)|*.*";
 
-        bool? result = dialog.ShowDialog();
-        if (result is null || result.Value == false)
-        {
-            Debug.WriteLine($"File selection cancelled");
-        }
+        if (_openFileDialog.ShowDialog() != true) return;
 
-        string selectedFilePath = dialog.FileName;
-
+        string selectedFilePath = _openFileDialog.FileName;
         var item = AddToRecentFiles(selectedFilePath);
 
         var model = await fileDbService.Get(selectedFilePath);
         if (model is null)
         {
-            await fileDbService.Create(new RecentFileModel()
+            await fileDbService.Create(new RecentFileModel
             {
                 FilePath = item.FilePath,
                 AccessedTime = item.AccessedTime,
@@ -85,11 +77,14 @@ public partial class FileViewModel(
     private void OpenFile(string filePath)
     {
         edfStore.OpenFile(filePath);
+
+        WeakReferenceMessenger.Default.Send(new RequestCloseWindowMessage(true));
     }
 
     private RecentFileItemViewModel AddToRecentFiles(string filePath)
     {
-        if (!RecentFiles.Any(f => filePath.Equals(f.FilePath, StringComparison.OrdinalIgnoreCase)))
+        var existingItem = RecentFiles.FirstOrDefault(f => filePath.Equals(f.FilePath, StringComparison.OrdinalIgnoreCase));
+        if (existingItem is null)
         {
             var newItem = new RecentFileItemViewModel
             {
@@ -103,16 +98,13 @@ public partial class FileViewModel(
             {
                 RecentFiles.RemoveAt(RecentFiles.Count - 1);
             }
-
             return newItem;
         }
         else
         {
-            var existingItem = RecentFiles.First(f => filePath.Equals(f.FilePath, StringComparison.OrdinalIgnoreCase));
             RecentFiles.Remove(existingItem);
             RecentFiles.Insert(0, existingItem);
             existingItem.AccessedTime = DateTime.Now;
-
             return existingItem;
         }
     }

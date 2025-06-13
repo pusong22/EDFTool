@@ -1,7 +1,4 @@
-using EDFToolApp.Router;
-using EDFToolApp.Service;
 using EDFToolApp.Store;
-using EDFToolApp.ViewModel;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -15,15 +12,15 @@ public static class StoreExtension
             s.AddSingleton<NavigationStore>();
             s.AddSingleton<EDFStore>();
 
-            s.AddSingleton(s =>
-            {
-                var navigationStore = s.GetRequiredService<NavigationStore>();
+            //s.AddSingleton(s =>
+            //{
+            //    var navigationStore = s.GetRequiredService<NavigationStore>();
 
-                return new ViewModelRouter(new Dictionary<string, Func<INavigationService>>
-                {
-                    {RouterName.FileView, () => new NavigationService<FileViewModel>(navigationStore, ()=> s.GetRequiredService<FileViewModel>()) }
-                });
-            });
+            //    return new ViewModelRouter(new Dictionary<string, Func<INavigationService>>
+            //    {
+            //        {RouterName.FileView, () => new NavigationService<FileViewModel>(navigationStore, ()=> s.GetRequiredService<FileViewModel>()) }
+            //    });
+            //});
         });
     }
 }

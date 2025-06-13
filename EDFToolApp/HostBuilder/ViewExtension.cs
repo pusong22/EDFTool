@@ -10,6 +10,7 @@ public static class ViewExtension
         return hostBuilder.ConfigureServices(s =>
         {
             s.AddSingleton(f => new MainWindow { DataContext = f.GetRequiredService<MainViewModel>() });
+            s.AddSingleton(f => new StartupWindow { DataContext = f.GetRequiredService<StartupWindowViewModel>() });
         });
     }
 }
