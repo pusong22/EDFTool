@@ -4,13 +4,22 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:EDFToolApp"
+        xmlns:vw="clr-namespace:EDFToolApp.View"
         mc:Ignorable="d"
-        Title="EDFToolApp" Height="450" Width="800"
-        WindowState="Maximized">
-
+        Title="EDFToolApp" Height="450" Width="800">
 
     <Grid>
-        <TextBlock Text="测试">
-        </TextBlock>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <Expander Grid.Column="0" Header="通道选择" IsExpanded="True">
+            <vw:SignalSelectorView DataContext="{Binding SignalSelectorViewModel}"/>
+        </Expander>
+
+        <Border Grid.Column="1" Background="White" Margin="10">
+            <TextBlock Text="绘图区域（待接入）" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+        </Border>
     </Grid>
 </Window>

@@ -44,7 +44,7 @@ public partial class App : Application
         //router.NavigateTo(RouterName.FileView);
 
         Current.MainWindow = provider.GetRequiredService<MainWindow>();
-
+       
         bool? dialogResult = provider.GetRequiredService<StartupWindow>().ShowDialog();
         if (dialogResult == true)
         {

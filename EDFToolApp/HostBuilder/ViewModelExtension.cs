@@ -11,6 +11,7 @@ public static class ViewModelExtension
         {
             s.AddSingleton<MainViewModel>();
             s.AddSingleton<StartupWindowViewModel>();
+            s.AddSingleton<SignalSelectorViewModel>();
         });
     }
 }
