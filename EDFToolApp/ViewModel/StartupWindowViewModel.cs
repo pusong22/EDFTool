@@ -27,6 +27,24 @@ public partial class StartupWindowViewModel(
         },
     ];
 
+
+    [RelayCommand]
+    private async Task LoadRecentFiles()
+    {
+        RecentFiles.Clear();
+        var recentFiles = await fileDbService.GetAll();
+        foreach (var file in recentFiles)
+        {
+            RecentFiles.Add(new RecentFileItemViewModel
+            {
+                Title = System.IO.Path.GetFileName(file.FilePath),
+                SubTitle = file.FilePath,
+                AccessedTime = file.AccessedTime,
+                FilePath = file.FilePath
+            });
+        }
+    }
+
     [RelayCommand]
     private async Task OpenFile(RecentFileItemViewModel recentFileItem)
     {
