@@ -33,13 +33,13 @@ public partial class App : Application
         var provider = _host.Services;
 
 
-#if DEBUG
+
         IDbContextFactory factory = provider.GetRequiredService<IDbContextFactory>();
         using (FileDbContext context = factory.CreateDbContext())
         {
             context.Database.Migrate();
         }
-#endif
+
         //var router = provider.GetRequiredService<ViewModelRouter>();
         //router.NavigateTo(RouterName.FileView);
 
