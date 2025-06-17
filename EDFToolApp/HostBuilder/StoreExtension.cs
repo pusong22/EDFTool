@@ -11,16 +11,6 @@ public static class StoreExtension
         {
             s.AddSingleton<NavigationStore>();
             s.AddSingleton<EDFStore>();
-
-            //s.AddSingleton(s =>
-            //{
-            //    var navigationStore = s.GetRequiredService<NavigationStore>();
-
-            //    return new ViewModelRouter(new Dictionary<string, Func<INavigationService>>
-            //    {
-            //        {RouterName.FileView, () => new NavigationService<FileViewModel>(navigationStore, ()=> s.GetRequiredService<FileViewModel>()) }
-            //    });
-            //});
         });
     }
 }

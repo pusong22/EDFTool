@@ -1,15 +1,14 @@
 using EDFToolApp.Store;
 using EDFToolApp.ViewModel;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace EDFToolApp.Service;
 
-public class NavigationService<TViewModel>(
-    NavigationStore navigationStore,
-    Func<TViewModel> createViewModel)
-    : INavigationService where TViewModel : BaseViewModel
+public class NavigationService(IServiceProvider provider, NavigationStore navigationStore)
 {
-    public void NavigationTo()
+    public void NavigationTo<TViewModel>() where TViewModel : BaseViewModel
     {
-        navigationStore.CurrentViewModel = createViewModel();
+        var vm = provider.GetRequiredService<TViewModel>();
+        navigationStore.CurrentViewModel = vm;
     }
 }
