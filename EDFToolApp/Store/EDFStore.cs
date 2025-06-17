@@ -1,7 +1,6 @@
 using EDFLibSharp;
 using EDFToolApp.ViewModel;
 using Service;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace EDFToolApp.Store;
@@ -26,7 +25,7 @@ public class EDFStore(EDFService edfService)
 
     private string ClipLabel(char[] label)
     {
-        StringBuilder sb = new ();
+        StringBuilder sb = new();
         foreach (char c in label)
         {
             if (c == '\0')

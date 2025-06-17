@@ -1,7 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
-using EDFToolApp.Message;
+using CommunityToolkit.Mvvm.Messaging.Messages;
 using EDFToolApp.Service;
 using EDFToolApp.Store;
 using Microsoft.Win32;
@@ -9,9 +9,7 @@ using Model;
 using System.Collections.ObjectModel;
 
 namespace EDFToolApp.ViewModel;
-public partial class StartupWindowViewModel(
-    FileDbService fileDbService,
-    EDFStore edfStore) : BaseViewModel
+public partial class StartupViewModel(FileDbService fileDbService, EDFStore edfStore) : BaseViewModel
 {
     private readonly OpenFileDialog _openFileDialog = new();
 
@@ -96,7 +94,7 @@ public partial class StartupWindowViewModel(
     {
         edfStore.OpenFile(filePath);
 
-        WeakReferenceMessenger.Default.Send(new RequestCloseWindowMessage(true));
+        WeakReferenceMessenger.Default.Send(new ValueChangedMessage<bool>(true));
     }
 
     private RecentFileItemViewModel AddToRecentFiles(string filePath)

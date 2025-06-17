@@ -1,4 +1,4 @@
-using EDFToolApp.ViewModel;
+using EDFToolApp.View;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -9,8 +9,11 @@ public static class ViewExtension
     {
         return hostBuilder.ConfigureServices(s =>
         {
-            s.AddSingleton(f => new MainWindow { DataContext = f.GetRequiredService<MainViewModel>() });
-            s.AddSingleton(f => new StartupWindow { DataContext = f.GetRequiredService<StartupWindowViewModel>() });
+            s.AddSingleton<MainWindow>();
+            s.AddSingleton<StartupView>();
+            s.AddSingleton<SignalSelectorView>();
+
+            s.AddTransient<GenericWindow>();
         });
     }
 }

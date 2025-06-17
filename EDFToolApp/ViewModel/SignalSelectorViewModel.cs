@@ -1,6 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using EDFLibSharp;
 using EDFToolApp.Store;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -15,7 +14,7 @@ public partial class SignalSelectorViewModel(EDFStore edfStore) : BaseViewModel
     private void LoadFakeSignals()
     {
         Signals.Clear();
-        
+
         foreach (SignalViewModel signalViewModel in edfStore.ReadInfo())
         {
             Signals.Add(signalViewModel);

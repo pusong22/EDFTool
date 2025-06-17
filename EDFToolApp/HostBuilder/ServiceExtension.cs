@@ -13,6 +13,7 @@ public static class ServiceExtension
             s.AddSingleton<EDFService>();
             s.AddSingleton<FileDbService>();
             s.AddSingleton<NavigationService>();
+            s.AddSingleton<NavigationWindowService>();
         });
     }
 }

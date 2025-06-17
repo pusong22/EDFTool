@@ -1,5 +1,7 @@
 using EDFToolApp.EFDbContext;
 using EDFToolApp.HostBuilder;
+using EDFToolApp.Service;
+using EDFToolApp.View;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -44,9 +46,10 @@ public partial class App : Application
         //router.NavigateTo(RouterName.FileView);
 
         Current.MainWindow = provider.GetRequiredService<MainWindow>();
-       
-        bool? dialogResult = provider.GetRequiredService<StartupWindow>().ShowDialog();
-        if (dialogResult == true)
+
+        var window = provider.GetRequiredService<NavigationWindowService>();
+        bool? result = window.ShowDialog<StartupView>();
+        if (result == true)
         {
             Current.MainWindow.Show();
         }

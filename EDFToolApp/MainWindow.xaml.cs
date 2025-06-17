@@ -1,3 +1,4 @@
+using EDFToolApp.ViewModel;
 using System.Windows;
 
 namespace EDFToolApp;
@@ -6,8 +7,10 @@ namespace EDFToolApp;
 /// </summary>
 public partial class MainWindow : Window
 {
-    public MainWindow()
+    public MainWindow(MainViewModel mainViewModel)
     {
         InitializeComponent();
+
+        DataContext = mainViewModel;
     }
 }

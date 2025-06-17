@@ -182,7 +182,7 @@ namespace EDFLibSharp
             int count = buffer.Count;
             double dMin = transform.DMin, dMax = transform.DMax;
             double unit = transform.Unit, offset = transform.Offset;
-            
+
             for (int i = 0; i < count; i++)
             {
                 double raw = buffer[i];
