@@ -10,6 +10,7 @@
         mc:Ignorable="d"
         Title="EDFToolApp" Height="450" Width="800">
 
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="auto"/>

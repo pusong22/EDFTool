@@ -15,10 +15,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Chart", "Chart", "{02EA681E
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core", "..\Chart\Core\Core.csproj", "{4C850E1E-976F-DA85-F014-DAF39EAAE113}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SkiaSharpBackend", "..\Chart\SkiaSharpBackend\SkiaSharpBackend.csproj", "{FF5EF2E8-E7C4-79B9-27A2-DCDD402E6044}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Wpf", "..\Chart\Wpf\Wpf.csproj", "{6F9B2FEC-874B-186B-D0A7-45D31A54B635}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -67,30 +63,12 @@ Global
 		{4C850E1E-976F-DA85-F014-DAF39EAAE113}.Release|x64.Build.0 = Release|x64
 		{4C850E1E-976F-DA85-F014-DAF39EAAE113}.Release|x86.ActiveCfg = Release|x86
 		{4C850E1E-976F-DA85-F014-DAF39EAAE113}.Release|x86.Build.0 = Release|x86
-		{FF5EF2E8-E7C4-79B9-27A2-DCDD402E6044}.Debug|x64.ActiveCfg = Debug|x64
-		{FF5EF2E8-E7C4-79B9-27A2-DCDD402E6044}.Debug|x64.Build.0 = Debug|x64
-		{FF5EF2E8-E7C4-79B9-27A2-DCDD402E6044}.Debug|x86.ActiveCfg = Debug|x86
-		{FF5EF2E8-E7C4-79B9-27A2-DCDD402E6044}.Debug|x86.Build.0 = Debug|x86
-		{FF5EF2E8-E7C4-79B9-27A2-DCDD402E6044}.Release|x64.ActiveCfg = Release|x64
-		{FF5EF2E8-E7C4-79B9-27A2-DCDD402E6044}.Release|x64.Build.0 = Release|x64
-		{FF5EF2E8-E7C4-79B9-27A2-DCDD402E6044}.Release|x86.ActiveCfg = Release|x86
-		{FF5EF2E8-E7C4-79B9-27A2-DCDD402E6044}.Release|x86.Build.0 = Release|x86
-		{6F9B2FEC-874B-186B-D0A7-45D31A54B635}.Debug|x64.ActiveCfg = Debug|x64
-		{6F9B2FEC-874B-186B-D0A7-45D31A54B635}.Debug|x64.Build.0 = Debug|x64
-		{6F9B2FEC-874B-186B-D0A7-45D31A54B635}.Debug|x86.ActiveCfg = Debug|x86
-		{6F9B2FEC-874B-186B-D0A7-45D31A54B635}.Debug|x86.Build.0 = Debug|x86
-		{6F9B2FEC-874B-186B-D0A7-45D31A54B635}.Release|x64.ActiveCfg = Release|x64
-		{6F9B2FEC-874B-186B-D0A7-45D31A54B635}.Release|x64.Build.0 = Release|x64
-		{6F9B2FEC-874B-186B-D0A7-45D31A54B635}.Release|x86.ActiveCfg = Release|x86
-		{6F9B2FEC-874B-186B-D0A7-45D31A54B635}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{4C850E1E-976F-DA85-F014-DAF39EAAE113} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
-		{FF5EF2E8-E7C4-79B9-27A2-DCDD402E6044} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
-		{6F9B2FEC-874B-186B-D0A7-45D31A54B635} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {004812BE-C49C-44F8-82DE-3193D5A5255D}

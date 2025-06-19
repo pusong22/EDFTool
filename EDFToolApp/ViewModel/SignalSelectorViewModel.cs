@@ -1,8 +1,9 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
+using CommunityToolkit.Mvvm.Messaging.Messages;
 using EDFToolApp.Store;
 using System.Collections.ObjectModel;
-using System.IO;
 
 namespace EDFToolApp.ViewModel;
 public partial class SignalSelectorViewModel(EDFStore edfStore) : BaseViewModel
@@ -35,19 +36,10 @@ public partial class SignalSelectorViewModel(EDFStore edfStore) : BaseViewModel
     private void ClearAll() => Signals.ToList().ForEach(s => s.IsSelected = false);
 
     [RelayCommand]
-    private void SavePreset()
+    private void Plot()
     {
-        var selected = Signals.Where(s => s.IsSelected).Select(s => s.Label);
-        File.WriteAllText("preset.txt", string.Join(",", selected));
-    }
-
-    [RelayCommand]
-    private void LoadPreset()
-    {
-        if (!File.Exists("preset.txt")) return;
-        var selected = File.ReadAllText("preset.txt").Split(',');
-
-        foreach (var signal in Signals)
-            signal.IsSelected = selected.Contains(signal.Label);
+        var selectedSignals = Signals.Where(x => x.IsSelected);
+        ValueChangedMessage<IEnumerable<SignalViewModel>> msg = new(selectedSignals);
+        WeakReferenceMessenger.Default.Send(msg);
     }
 }

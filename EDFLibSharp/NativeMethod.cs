@@ -4,7 +4,7 @@ namespace EDFLibSharp
 {
     internal static class NativeMethod
     {
-        private const string DLL = "edflib.dll";
+        private const string DLL = "../../edflib.dll";
 
         [DllImport(DLL, EntryPoint = "edf_open", CallingConvention = CallingConvention.Cdecl)]
         internal static extern IntPtr EdfOpen(

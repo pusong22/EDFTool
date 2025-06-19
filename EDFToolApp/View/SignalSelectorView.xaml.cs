@@ -1,4 +1,3 @@
-using EDFToolApp.ViewModel;
 using System.Windows.Controls;
 
 namespace EDFToolApp.View;

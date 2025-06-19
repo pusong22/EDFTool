@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:chart="clr-namespace:Wpf;assembly=Wpf"
+             xmlns:chart="clr-namespace:EDFToolApp.Chart"
              xmlns:local="clr-namespace:EDFToolApp.View" 
              xmlns:vm="clr-namespace:EDFToolApp.ViewModel" 
              d:DataContext="{d:DesignInstance Type=vm:ChartViewModel}"
@@ -12,7 +12,5 @@
 
     <chart:CartesianChartControl 
         XAxes="{Binding XAxes}"
-        YAxes="{Binding YAxes}"
-        Series="{Binding Series}"
-        Title="{Binding Title}"/>
+        YAxes="{Binding YAxes}" />
 </UserControl>

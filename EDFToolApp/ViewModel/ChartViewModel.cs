@@ -1,50 +1,64 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Messaging;
+using CommunityToolkit.Mvvm.Messaging.Messages;
+using Core.Helper;
 using Core.Kernel.Axis;
 using Core.Kernel.Painting;
 using Core.Kernel.Series;
-using SkiaSharpBackend;
-using SkiaSharpBackend.Drawing;
+using EDFToolApp.Chart.Drawing;
+using System.Collections.ObjectModel;
 
 namespace EDFToolApp.ViewModel;
-public partial class ChartViewModel : BaseViewModel
+public partial class ChartViewModel : BaseViewModel,
+    IRecipient<ValueChangedMessage<IEnumerable<SignalViewModel>>>
 {
     [ObservableProperty]
-    private CoreAxis[] _xAxes = [
-        new Axis() {
+    private ObservableCollection<CoreAxis> _xAxes = [];
+
+    [ObservableProperty]
+    private ObservableCollection<CoreAxis> _yAxes = [];
+
+    [ObservableProperty]
+    private ObservableCollection<CoreLineSeries> _series = [];
+
+    public ChartViewModel()
+    {
+        WeakReferenceMessenger.Default.Register(this);
+        ChartConfig.DisabledAnimation = true;
+
+
+        XAxes.Add(new Axis()
+        {
             Name = "Time",
             AxisLinePaint = new Pen(),
-            SeparatorPaint = new Pen(new DashEffectSetting([3,3])),
+            SeparatorPaint = new Pen(new DashEffectSetting([3, 3])),
             TickPaint = new Pen(),
-            Labeler=l=>l.ToString("N2"),
-        }
-    ];
+            Labeler = l => l.ToString("N2")
+        });
 
-    [ObservableProperty]
-    private CoreAxis[] _yAxes = [
-        new Axis() {
-            Name = "Magnitude",
-            AxisLinePaint = new Pen(),
-            SeparatorPaint = new Pen(new DashEffectSetting([3,3])),
-            TickPaint = new Pen(),
-            Labeler=l=>l.ToString("N2"),
-        }
-    ];
+    }
 
-    [ObservableProperty]
-    private CoreLineSeries[] _series = [
-        new LineSeries<double>([.. Fetch()])
-        {
-            LineSmoothness = 0.85f,
-            VisualGeometrySize = 20f,
-            SampleInterval = 1/10d,
-        }
-    ];
-
-    private static IEnumerable<double> Fetch()
+    public void Receive(ValueChangedMessage<IEnumerable<SignalViewModel>> message)
     {
-        for (double x = 0; x < 100; x += 0.1)
+        YAxes.Clear();
+
+        foreach (var item in message.Value)
         {
-            yield return Math.Sin(x);
+            YAxes.Add(new Axis()
+            {
+                Name = item.Label,
+                AxisLinePaint = new Pen(),
+                SeparatorPaint = new Pen(new DashEffectSetting([3, 3])),
+                TickPaint = new Pen(),
+                Labeler = l => l.ToString("N2"),
+            });
         }
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        base.Dispose(disposing);
+
+        WeakReferenceMessenger.Default.Unregister<ValueChangedMessage<IEnumerable<SignalViewModel>>>(this);
     }
 }
