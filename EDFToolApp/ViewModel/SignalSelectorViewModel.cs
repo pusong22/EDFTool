@@ -11,14 +11,22 @@ public partial class SignalSelectorViewModel(EDFStore edfStore) : BaseViewModel
     private ObservableCollection<SignalViewModel> _signals = [];
 
     [RelayCommand]
-    private void LoadFakeSignals()
+    private void LoadSignals()
     {
+        if (!edfStore.Open) return;
+
         Signals.Clear();
 
         foreach (SignalViewModel signalViewModel in edfStore.ReadInfo())
         {
             Signals.Add(signalViewModel);
         }
+    }
+
+    [RelayCommand]
+    private void ClearSignals()
+    {
+        Signals.Clear();
     }
 
     [RelayCommand]

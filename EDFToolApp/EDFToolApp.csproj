@@ -23,14 +23,9 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\..\Chart\Wpf\Wpf.csproj" />
         <ProjectReference Include="..\Model\Model.csproj" />
         <ProjectReference Include="..\Service\Service.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <None Update="appsettings.json">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
     </ItemGroup>
 
 </Project>

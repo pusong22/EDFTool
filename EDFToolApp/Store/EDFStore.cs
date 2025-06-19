@@ -6,9 +6,15 @@ using System.Text;
 namespace EDFToolApp.Store;
 public class EDFStore(EDFService edfService)
 {
+    public bool Open { get; private set; }
+    public string? EdfFilePath { get; private set; }
+
     public void OpenFile(string filePath)
     {
         edfService.Initialize(filePath);
+
+        Open = true;
+        EdfFilePath = filePath;
     }
 
     public IEnumerable<SignalViewModel> ReadInfo()

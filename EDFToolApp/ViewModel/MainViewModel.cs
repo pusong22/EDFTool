@@ -1,52 +1,44 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using EDFToolApp.Service;
 using EDFToolApp.Store;
-using EDFToolApp.View;
+using Microsoft.Win32;
 
 namespace EDFToolApp.ViewModel;
 
-public partial class MainViewModel : BaseViewModel
+public partial class MainViewModel(EDFStore edfStore,
+    SignalSelectorViewModel signalSelectorViewModel,
+    ChartViewModel chartViewModel) : BaseViewModel
 {
-    private readonly NavigationStore _navigationStore;
-    private readonly NavigationService _navigationService;
-    private readonly NavigationWindowService _navigationWindowService;
-
-    public MainViewModel(NavigationStore navigationStore,
-        NavigationService navigationService,
-        NavigationWindowService navigationWindowService)
-    {
-        _navigationStore = navigationStore;
-        _navigationStore.CurrentViewModelChanged += OnCurrentViewModelChanged;
-
-        CurrentViewModel = _navigationStore.CurrentViewModel;
-
-        _navigationService = navigationService;
-        _navigationWindowService = navigationWindowService;
-    }
-
+    [ObservableProperty]
+    private SignalSelectorViewModel? _signalSelectorViewModel = signalSelectorViewModel;
 
     [ObservableProperty]
-    private BaseViewModel? _currentViewModel;
-
-    [ObservableProperty]
-    private bool isPaneOpen = true;
+    private ChartViewModel? _chartViewModel = chartViewModel;
 
     [RelayCommand]
-    private void ShowSignalList()
+    private void OpenEdfFile()
     {
-        _navigationWindowService.Show<SignalSelectorView>();
-        //_navigationService.NavigationTo<SignalSelectorViewModel>();
+        OpenFileDialog ofd = new()
+        {
+            Title = "Select an EDF File",
+            Filter = "EDF Files (*.edf)|*.edf|All Files (*.*)|*.*"
+        };
+
+
+        if (ofd.ShowDialog() != true) return;
+
+        string selectedFilePath = ofd.FileName;
+
+        edfStore.OpenFile(selectedFilePath);
+
+        SignalSelectorViewModel?.LoadSignalsCommand.Execute(null);
     }
 
-
-    private void OnCurrentViewModelChanged()
+    [RelayCommand]
+    private void CloseEdfFile()
     {
-        CurrentViewModel = _navigationStore.CurrentViewModel;
-    }
+        if (string.IsNullOrEmpty(edfStore.EdfFilePath)) return;
 
-    protected override void Dispose(bool disposing)
-    {
-        _navigationStore.CurrentViewModelChanged -= OnCurrentViewModelChanged;
+        SignalSelectorViewModel?.ClearSignalsCommand.Execute(null);
     }
 }

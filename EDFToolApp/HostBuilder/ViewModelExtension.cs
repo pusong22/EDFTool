@@ -10,8 +10,8 @@ public static class ViewModelExtension
         return hostBuilder.ConfigureServices(s =>
         {
             s.AddSingleton<MainViewModel>();
-            s.AddSingleton<StartupViewModel>();
             s.AddSingleton<SignalSelectorViewModel>();
+            s.AddSingleton<ChartViewModel>();
         });
     }
 }

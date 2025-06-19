@@ -1,4 +1,3 @@
-using EDFToolApp.Service;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Service;
@@ -11,9 +10,6 @@ public static class ServiceExtension
         return hostBuilder.ConfigureServices(s =>
         {
             s.AddSingleton<EDFService>();
-            s.AddSingleton<FileDbService>();
-            s.AddSingleton<NavigationService>();
-            s.AddSingleton<NavigationWindowService>();
         });
     }
 }

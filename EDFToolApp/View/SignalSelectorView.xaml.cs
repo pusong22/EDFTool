@@ -7,10 +7,8 @@ namespace EDFToolApp.View;
 /// </summary>
 public partial class SignalSelectorView : UserControl
 {
-    public SignalSelectorView(SignalSelectorViewModel signalSelectorViewModel)
+    public SignalSelectorView()
     {
         InitializeComponent();
-
-        DataContext = signalSelectorViewModel;
     }
 }

@@ -1,4 +1,5 @@
 using EDFToolApp.View;
+using EDFToolApp.ViewModel;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -10,10 +11,8 @@ public static class ViewExtension
         return hostBuilder.ConfigureServices(s =>
         {
             s.AddSingleton<MainWindow>();
-            s.AddSingleton<StartupView>();
             s.AddSingleton<SignalSelectorView>();
-
-            s.AddTransient<GenericWindow>();
+            s.AddSingleton<ChartViewModel>();
         });
     }
 }

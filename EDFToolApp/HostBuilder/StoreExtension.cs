@@ -9,7 +9,6 @@ public static class StoreExtension
     {
         return hostBuilder.ConfigureServices(s =>
         {
-            s.AddSingleton<NavigationStore>();
             s.AddSingleton<EDFStore>();
         });
     }
