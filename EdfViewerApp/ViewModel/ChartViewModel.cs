@@ -19,7 +19,7 @@ public partial class ChartViewModel : BaseViewModel,
     private ObservableCollection<Axis> _yAxes = [];
 
     [ObservableProperty]
-    private ObservableCollection<LineSeries<double>> _series = [];
+    private ObservableCollection<LineSeriesProxy> _series = [];
 
     [ObservableProperty]
     private LabelVisual _title = new()
@@ -29,15 +29,52 @@ public partial class ChartViewModel : BaseViewModel,
     };
 
 
+    [ObservableProperty]
+    private double _timeMinimum = 0d;
+
+    [ObservableProperty]
+    private double _timeMaximum = 10d;
+
+    [ObservableProperty]
+    private double _currentTime;
+    private List<SignalViewModel> _currentSelectedSignals = [];
+
     public ChartViewModel(EDFStore edfStore)
     {
         WeakReferenceMessenger.Default.Register(this);
 
         _edfStore = edfStore;
+        _edfStore.InitializeTimeRangeHandler += InitializeTimeRange;
+    }
+
+    private void InitializeTimeRange(object s, EventArgs e)
+    {
+        double totalDuration = _edfStore.GetTotalDurationInSeconds(); // Example method
+        TimeMinimum = 0; // EDF typically starts at time 0
+        TimeMaximum = totalDuration;
+
+        // Adjust the slider's initial position to the beginning
+        CurrentTime = TimeMinimum; // This will trigger OnCurrentTimeChanged and load initial data
+    }
+
+    partial void OnCurrentTimeChanged(double value)
+    {
+        if (value >= TimeMaximum) return;
+
+        for (int i = 0; i < _currentSelectedSignals.Count; i++)
+        {
+            var buf = _edfStore.ReadPhysicalData(_currentSelectedSignals[i].Id, (int)value, 10);
+
+            var series = Series[i];
+            series.XOffset = value;
+            series.Data = [.. buf];
+        }
     }
 
     public void Receive(ValueChangedMessage<IEnumerable<SignalViewModel>> message)
     {
+        _currentSelectedSignals = [.. message.Value]; // Store selected signals for later use
+
         XAxes.Clear();
         XAxes.Add(new Axis()
         {
@@ -49,7 +86,7 @@ public partial class ChartViewModel : BaseViewModel,
         });
 
         YAxes.Clear();
-        foreach (var item in message.Value)
+        foreach (var item in _currentSelectedSignals)
         {
             YAxes.Add(new Axis()
             {
@@ -63,11 +100,14 @@ public partial class ChartViewModel : BaseViewModel,
 
         Series.Clear();
 
-        foreach (var item in message.Value)
+        int id = 0;
+        foreach (var item in _currentSelectedSignals)
         {
-            // TEST data
-            var buf = _edfStore.ReadPhysicalData(item.Id, 0, 1);
-            Series.Add(new LineSeries<double>(buf) { YIndex = item.Id });
+            Series.Add(new LineSeriesProxy
+            {
+                YIndex = id++,
+                SampleInterval = 1d / item.SampleRate,
+            });
         }
     }
 
@@ -76,5 +116,7 @@ public partial class ChartViewModel : BaseViewModel,
         base.Dispose(disposing);
 
         WeakReferenceMessenger.Default.Unregister<ValueChangedMessage<IEnumerable<SignalViewModel>>>(this);
+
+
     }
 }

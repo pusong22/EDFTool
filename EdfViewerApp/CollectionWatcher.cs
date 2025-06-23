@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Specialized;
+using System.ComponentModel;
 
 namespace EdfViewerApp;
 public class CollectionWatcher<TCollection>(Action updateAction) : IDisposable
@@ -16,6 +17,11 @@ public class CollectionWatcher<TCollection>(Action updateAction) : IDisposable
         {
             if (Equals(_watchedCollection, value)) return;
 
+            UnsubscribeFromCollection(_watchedCollection);
+            _watchedCollection = value;
+            SubscribeFromCollection(_watchedCollection);
+
+            _updateAction?.Invoke();
             if (_watchedCollection is INotifyCollectionChanged oldNotifier)
             {
                 oldNotifier.CollectionChanged -= OnInternalCollectionChanged;
@@ -32,11 +38,67 @@ public class CollectionWatcher<TCollection>(Action updateAction) : IDisposable
         }
     }
 
+    private void UnsubscribeFromCollection(TCollection? collection)
+    {
+        if (_watchedCollection is INotifyCollectionChanged notifier)
+            notifier.CollectionChanged -= OnInternalCollectionChanged;
+
+        if (collection is not null)
+        {
+            foreach (var item in collection)
+                UnsubscribeFromItem(item);
+        }
+    }
+
+
+    private void SubscribeFromCollection(TCollection? collection)
+    {
+        if (_watchedCollection is INotifyCollectionChanged notifier)
+            notifier.CollectionChanged += OnInternalCollectionChanged;
+
+        if (collection is not null)
+        {
+            foreach (var item in collection)
+                SubscribeFromItem(item);
+        }
+    }
+
+
+    private void UnsubscribeFromItem(object item)
+    {
+        if (item is INotifyPropertyChanged inpc)
+            inpc.PropertyChanged -= OnItemPropertyChanged;
+    }
+
+
+    private void SubscribeFromItem(object item)
+    {
+        if (item is INotifyPropertyChanged inpc)
+            inpc.PropertyChanged += OnItemPropertyChanged;
+    }
+
     private void OnInternalCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
+        if (e.OldItems is not null)
+        {
+            foreach (var oldItem in e.OldItems)
+                UnsubscribeFromItem(oldItem);
+        }
+
+        if (e.NewItems is not null)
+        {
+            foreach (var newItem in e.NewItems)
+                SubscribeFromItem(newItem);
+        }
+
         _updateAction?.Invoke();
     }
 
+    private void OnItemPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        _updateAction?.Invoke();
+    }
+    
 
     public void Dispose()
     {
@@ -48,10 +110,7 @@ public class CollectionWatcher<TCollection>(Action updateAction) : IDisposable
     {
         if (disposing)
         {
-            if (_watchedCollection is INotifyCollectionChanged notifier)
-            {
-                notifier.CollectionChanged -= OnInternalCollectionChanged;
-            }
+            UnsubscribeFromCollection(_watchedCollection);
 
             _watchedCollection = default;
             _updateAction = null!;

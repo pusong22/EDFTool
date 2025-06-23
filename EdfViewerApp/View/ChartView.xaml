@@ -10,9 +10,26 @@
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
 
-    <chart:CartesianChartView
-        Title="{Binding Title}"
-        XAxes="{Binding XAxes}"
-        YAxes="{Binding YAxes}"
-        Series="{Binding Series}"/>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="auto"/>
+        </Grid.RowDefinitions>
+
+        <chart:CartesianChartView
+            Grid.Row="0"
+            Title="{Binding Title}"
+            XAxes="{Binding XAxes}"
+            YAxes="{Binding YAxes}"
+            Series="{Binding Series}"/>
+
+        <Slider Grid.Row="1"
+                Margin="5"
+                Minimum="{Binding TimeMinimum}"
+                Maximum="{Binding TimeMaximum}"
+                Value="{Binding CurrentTime, Mode=TwoWay}"
+                TickPlacement="BottomRight"
+                IsSnapToTickEnabled="True"
+                TickFrequency="1" />
+    </Grid>
 </UserControl>

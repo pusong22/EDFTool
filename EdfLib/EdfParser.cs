@@ -250,36 +250,13 @@ public class EdfParser : IDisposable
 
         EdfSignalInfo targetSignal = Signals[signalIndex];
         int samplesPerSignalPerRecord = targetSignal.NumberOfSamplesInDataRecord;
-
+      
         // Determine actual number of records to read
-        long actualRecordsToRead = numberOfRecordsToRead;
-        if (numberOfRecordsToRead == -1)
-        {
-            // If -1, read all remaining records
-            if (NumberOfDataRecords != -1)
-            {
-                actualRecordsToRead = NumberOfDataRecords - startRecordIndex;
-            }
-            else
-            {
-                // If total records are unknown, we must estimate or read until EOF.
-                // For safety and to pre-allocate, let's assume we read until EOF based on file size.
-                // This is an estimation and might be slightly off if file is truncated/padded.
-                long remainingBytes = _fileStream!.Length - (HeaderSizeInBytes + startRecordIndex * _dataRecordByteSize);
-                actualRecordsToRead = remainingBytes / _dataRecordByteSize;
-
-                if (actualRecordsToRead < 0) actualRecordsToRead = 0; // Guard against negative
-            }
-        }
-        else if (NumberOfDataRecords != -1)
-        {
-            // Ensure we don't try to read beyond the end of the file
-            actualRecordsToRead = Math.Min(actualRecordsToRead, NumberOfDataRecords - startRecordIndex);
-        }
-
+        int actualRecordsToRead = numberOfRecordsToRead;
+        actualRecordsToRead = Math.Min(actualRecordsToRead, NumberOfDataRecords - startRecordIndex);
         if (actualRecordsToRead <= 0) return []; // No records to read
 
-        int totalSamplesToRead = (int)(actualRecordsToRead * samplesPerSignalPerRecord);
+        int totalSamplesToRead = actualRecordsToRead * samplesPerSignalPerRecord;
         if (totalSamplesToRead == 0) return [];
 
         double[] resultSamples = new double[totalSamplesToRead];

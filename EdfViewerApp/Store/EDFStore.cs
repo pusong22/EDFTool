@@ -8,6 +8,7 @@ public class EDFStore
 
     public bool Open { get; private set; }
     public string? EdfFilePath { get; private set; }
+    public event EventHandler? InitializeTimeRangeHandler;
 
     public void OpenFile(string filePath)
     {
@@ -15,6 +16,8 @@ public class EDFStore
 
         Open = true;
         EdfFilePath = filePath;
+
+        InitializeTimeRangeHandler?.Invoke(this, EventArgs.Empty);
     }
 
     public IEnumerable<SignalViewModel> ReadInfo()
@@ -26,7 +29,12 @@ public class EDFStore
 
         foreach (var signalInfo in _parser.Signals)
         {
-            yield return new SignalViewModel() { Id = id++, Label = signalInfo.Label };
+            yield return new SignalViewModel()
+            {
+                Id = id++,
+                Label = signalInfo.Label,
+                SampleRate = signalInfo.SampleRate,
+            };
         }
     }
 
@@ -38,5 +46,13 @@ public class EDFStore
         var buf = _parser.ReadSignalData(index, startRecord, recordCount);
 
         return buf;
+    }
+
+    public double GetTotalDurationInSeconds()
+    {
+        if (_parser is null)
+            throw new InvalidOperationException("_parser is not open.");
+
+        return _parser.NumberOfDataRecords * _parser.DurationOfDataRecordSeconds;
     }
 }

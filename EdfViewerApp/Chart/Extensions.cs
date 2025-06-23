@@ -59,7 +59,7 @@ public static class Extensions
     public static void UseDefault(this ChartConfig chartConfig)
     {
         chartConfig
-            .AddValueTypeParser<short>((x, y) => new(y, y))
+            .AddValueTypeParser<short>((x, y) => new(x, y))
             .AddValueTypeParser<int>((x, y) => new(x, y))
             .AddValueTypeParser<double>((x, y) => new(x, y))
             .AddValueTypeParser<float>((x, y) => new(x, y))
