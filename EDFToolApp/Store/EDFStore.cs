@@ -1,17 +1,17 @@
 using EDFLibSharp;
 using EDFToolApp.ViewModel;
-using Service;
-using System.Text;
 
 namespace EDFToolApp.Store;
-public class EDFStore(EDFService edfService)
+public class EDFStore
 {
+    private EdfParser? _parser;
+
     public bool Open { get; private set; }
     public string? EdfFilePath { get; private set; }
 
     public void OpenFile(string filePath)
     {
-        edfService.Initialize(filePath);
+        _parser = new EdfParser(filePath);
 
         Open = true;
         EdfFilePath = filePath;
@@ -19,27 +19,24 @@ public class EDFStore(EDFService edfService)
 
     public IEnumerable<SignalViewModel> ReadInfo()
     {
-        HeaderInfo headerInfo = edfService.ReadHeaderInfo();
-        uint count = headerInfo._signalCount;
-        SignalInfo[] signalInfos = edfService.ReadSignalInfo(count);
+        if (_parser is null)
+            throw new InvalidOperationException("_parser is not open.");
 
-        foreach (SignalInfo signalInfo in signalInfos)
+        int id = 0;
+
+        foreach (var signalInfo in _parser.Signals)
         {
-            yield return new SignalViewModel() { Label = ClipLabel(signalInfo._label) };
+            yield return new SignalViewModel() { Id = id++, Label = signalInfo.Label };
         }
     }
 
-    private string ClipLabel(char[] label)
+    public double[] ReadPhysicalData(int index, int startRecord, int recordCount)
     {
-        StringBuilder sb = new();
-        foreach (char c in label)
-        {
-            if (c == '\0')
-                break;
+        if (_parser is null)
+            throw new InvalidOperationException("_parser is not open.");
 
-            sb.Append(c);
-        }
+        var buf = _parser.ReadSignalData(index, startRecord, recordCount);
 
-        return sb.ToString();
+        return buf;
     }
 }

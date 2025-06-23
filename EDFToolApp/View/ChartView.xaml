@@ -10,7 +10,9 @@
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
 
-    <chart:CartesianChartControl 
+    <chart:CartesianChartView
+        Title="{Binding Title}"
         XAxes="{Binding XAxes}"
-        YAxes="{Binding YAxes}" />
+        YAxes="{Binding YAxes}"
+        Series="{Binding Series}"/>
 </UserControl>

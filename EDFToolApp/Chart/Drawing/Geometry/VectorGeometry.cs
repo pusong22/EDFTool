@@ -1,6 +1,6 @@
+using Core.Kernel;
 using Core.Kernel.Drawing;
 using Core.Kernel.Drawing.Geometry;
-using Core.Kernel.Series;
 using SkiaSharp;
 
 namespace EDFToolApp.Chart.Drawing.Geometry;

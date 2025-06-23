@@ -70,6 +70,7 @@ public class SkiaSharpDrawnContext(SKSurface surface, SKImageInfo info)
         ActivateSkFont ??= new SKFont();
 
         ActivateSkFont.Typeface = paint.ToSKTypeface();
+        ActivateSkFont.Size = paint.FontSize;
     }
 
     public override TRect MeasureText<TRect>(string text)

@@ -41,7 +41,7 @@ public class LabelGeometry : BaseLabelGeometry
 
         using var font = new SKFont
         {
-            Size = TextSize,
+            Size = Paint.FontSize,
             Typeface = Paint.ToSKTypeface()
         };
 
@@ -73,7 +73,7 @@ public class LabelGeometry : BaseLabelGeometry
     private IEnumerable<string> GetLines()
     {
         if (Text is null)
-            throw new ArgumentNullException(nameof(Text));
+            return [];
 
         IEnumerable<string> lines = Text.Split([Environment.NewLine], StringSplitOptions.None);
 
