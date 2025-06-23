@@ -1,2 +1,2 @@
 # TODO
-- [] monitor axes and series in core.
+- [X] monitor axes and series in core.
