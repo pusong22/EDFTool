@@ -56,6 +56,11 @@ public static class Extensions
         return new Color(color.Red, color.Green, color.Blue, color.Alpha);
     }
 
+    public static SKColor ToSKColor(this Color color)
+    {
+        return new SKColor(color.Red, color.Green, color.Blue, color.Alpha);
+    }
+
     public static void UseDefault(this ChartConfig chartConfig)
     {
         chartConfig

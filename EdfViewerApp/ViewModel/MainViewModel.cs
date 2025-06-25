@@ -7,13 +7,18 @@ namespace EdfViewerApp.ViewModel;
 
 public partial class MainViewModel(EDFStore edfStore,
     SignalSelectorViewModel signalSelectorViewModel,
-    ChartViewModel chartViewModel) : BaseViewModel
+    LineSeriesViewModel lineSeriesViewModel,
+    HeatSeriesViewModel heatSeriesViewModel) : BaseViewModel
 {
     [ObservableProperty]
     private SignalSelectorViewModel? _signalSelectorViewModel = signalSelectorViewModel;
 
     [ObservableProperty]
-    private ChartViewModel? _chartViewModel = chartViewModel;
+    private LineSeriesViewModel? _lineSeriesViewModel = lineSeriesViewModel;
+
+    [ObservableProperty]
+    private HeatSeriesViewModel? _heatSeriesViewModel = heatSeriesViewModel;
+
 
     [RelayCommand]
     private void OpenEdfFile()

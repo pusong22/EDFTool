@@ -87,6 +87,14 @@ public class SkiaSharpDrawnContext(SKSurface surface, SKImageInfo info)
         Canvas.DrawRect(skRect, ActivateSkPaint!);
     }
 
+    public override void DrawBitmap<TBitmap, TRect>(TBitmap bmp, TRect rect)
+    {
+        if (bmp is not SKBitmap sKBitmap) return;
+        if (rect is not SKRect skRect) return;
+
+        Canvas.DrawBitmap(sKBitmap, skRect, ActivateSkPaint!);
+    }
+
     public override void DrawText<TPoint>(string text, TPoint p)
     {
         if (p is not SKPoint skPoint) return;

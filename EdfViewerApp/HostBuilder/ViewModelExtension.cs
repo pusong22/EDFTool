@@ -11,7 +11,8 @@ public static class ViewModelExtension
         {
             s.AddSingleton<MainViewModel>();
             s.AddSingleton<SignalSelectorViewModel>();
-            s.AddSingleton<ChartViewModel>();
+            s.AddSingleton<LineSeriesViewModel>();
+            s.AddSingleton<HeatSeriesViewModel>();
         });
     }
 }

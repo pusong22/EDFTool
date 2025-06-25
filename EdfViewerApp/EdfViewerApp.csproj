@@ -22,4 +22,10 @@
         <ProjectReference Include="..\EdfLib\EdfLib.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <None Update="Mona_Lisa.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
+
 </Project>

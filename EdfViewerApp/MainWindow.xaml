@@ -50,13 +50,30 @@
                     DataContext="{Binding SignalSelectorViewModel}"/>
             </Border>
 
-            <Border Grid.Column="1"
+
+            <Grid Grid.Column="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="2*"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <Border 
+                    Grid.Row="0"
                     Margin="5"
                     BorderBrush="Gray"
-                    BorderThickness="2">    
-                <vw:ChartView
-                    DataContext="{Binding ChartViewModel}" />
-            </Border>
+                    BorderThickness="2">
+                    <vw:LineSeriesView
+                        DataContext="{Binding LineSeriesViewModel}" />
+                </Border>
+                <Border 
+                     Grid.Row="1"
+                     Margin="5"
+                     BorderBrush="Gray"
+                     BorderThickness="2">
+                     <vw:HeatSeriesView
+                         DataContext="{Binding HeatSeriesViewModel}" />
+                </Border>
+            </Grid>
+
         </Grid>
 
         <!--status-->

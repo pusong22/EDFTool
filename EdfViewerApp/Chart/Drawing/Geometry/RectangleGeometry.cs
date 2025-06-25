@@ -6,6 +6,6 @@ public class RectangleGeometry : BaseRectangleGeometry
 {
     public override void Draw<TDrawnContext>(TDrawnContext context)
     {
-        context.DrawRect(new SKRect(X, Y, Width, Height));
+        context.DrawRect(new SKRect(X, Y, X + Width, Y + Height));
     }
 }

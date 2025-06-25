@@ -12,7 +12,7 @@ namespace EdfViewerApp.Chart;
 /// </summary>
 public partial class CartesianChartView : UserControl, ICartesianChartView
 {
-    private readonly CollectionWatcher<IEnumerable<ILineSeries>> _seriesWatcher;
+    private readonly CollectionWatcher<IEnumerable<ICartesianSeries>> _seriesWatcher;
     private readonly CollectionWatcher<IEnumerable<ICartesianAxis>> _xAxesWatcher;
     private readonly CollectionWatcher<IEnumerable<ICartesianAxis>> _yAxesWatcher;
 
@@ -27,7 +27,7 @@ public partial class CartesianChartView : UserControl, ICartesianChartView
 
         ChartConfig.Configure(config => config.UseDefault());
 
-        _seriesWatcher = new CollectionWatcher<IEnumerable<ILineSeries>>(() => _cartesianChart?.Update());
+        _seriesWatcher = new CollectionWatcher<IEnumerable<ICartesianSeries>>(() => _cartesianChart?.Update());
         _xAxesWatcher = new CollectionWatcher<IEnumerable<ICartesianAxis>>(() => _cartesianChart?.Update());
         _yAxesWatcher = new CollectionWatcher<IEnumerable<ICartesianAxis>>(() => _cartesianChart?.Update());
 
@@ -43,9 +43,9 @@ public partial class CartesianChartView : UserControl, ICartesianChartView
         set { SetValue(TitleProperty, value); }
     }
 
-    public IEnumerable<ILineSeries> Series
+    public IEnumerable<ICartesianSeries> Series
     {
-        get { return (IEnumerable<ILineSeries>)GetValue(SeriesProperty); }
+        get { return (IEnumerable<ICartesianSeries>)GetValue(SeriesProperty); }
         set { SetValue(SeriesProperty, value); }
     }
 
@@ -77,13 +77,13 @@ public partial class CartesianChartView : UserControl, ICartesianChartView
     public static readonly DependencyProperty SeriesProperty =
         DependencyProperty.Register(
             "Series",
-            typeof(IEnumerable<ILineSeries>),
+            typeof(IEnumerable<ICartesianSeries>),
             typeof(CartesianChartView),
             new PropertyMetadata(null, (d, e) =>
             {
                 if (d is CartesianChartView o)
                 {
-                    o._seriesWatcher.WatchedCollection = (IEnumerable<ILineSeries>)e.NewValue;
+                    o._seriesWatcher.WatchedCollection = (IEnumerable<ICartesianSeries>)e.NewValue;
                 }
             }));
 

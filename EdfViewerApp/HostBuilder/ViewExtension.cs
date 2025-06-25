@@ -1,5 +1,3 @@
-using EdfViewerApp.View;
-using EdfViewerApp.ViewModel;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -11,8 +9,6 @@ public static class ViewExtension
         return hostBuilder.ConfigureServices(s =>
         {
             s.AddSingleton<MainWindow>();
-            s.AddSingleton<SignalSelectorView>();
-            s.AddSingleton<ChartViewModel>();
         });
     }
 }

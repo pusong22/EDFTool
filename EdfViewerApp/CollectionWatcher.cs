@@ -98,7 +98,7 @@ public class CollectionWatcher<TCollection>(Action updateAction) : IDisposable
     {
         _updateAction?.Invoke();
     }
-    
+
 
     public void Dispose()
     {

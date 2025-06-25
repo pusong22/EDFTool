@@ -250,7 +250,7 @@ public class EdfParser : IDisposable
 
         EdfSignalInfo targetSignal = Signals[signalIndex];
         int samplesPerSignalPerRecord = targetSignal.NumberOfSamplesInDataRecord;
-      
+
         // Determine actual number of records to read
         int actualRecordsToRead = numberOfRecordsToRead;
         actualRecordsToRead = Math.Min(actualRecordsToRead, NumberOfDataRecords - startRecordIndex);
