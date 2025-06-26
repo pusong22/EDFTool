@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
 using Core.Kernel.Painting;
@@ -12,6 +13,8 @@ public partial class LineSeriesViewModel : BaseViewModel,
     IRecipient<ValueChangedMessage<IEnumerable<SignalViewModel>>>
 {
     private readonly EDFStore _edfStore;
+    private CancellationTokenSource? _debouncingCts;
+
     [ObservableProperty]
     private ObservableCollection<Axis> _xAxes = [];
 
@@ -61,14 +64,40 @@ public partial class LineSeriesViewModel : BaseViewModel,
     {
         if (value >= TimeMaximum) return;
 
+        // debouncing
+        _debouncingCts?.Cancel();
+        _debouncingCts = new CancellationTokenSource();
+        var token = _debouncingCts.Token;
+
+        Task.Delay(300).ContinueWith(t =>
+        {
+            if (token.IsCancellationRequested) return;
+
+            LoadDataAt(value);
+
+        }, token);
+    }
+
+    private void LoadDataAt(double time)
+    {
         for (int i = 0; i < _currentSelectedSignals.Count; i++)
         {
-            var buf = _edfStore.ReadPhysicalData(_currentSelectedSignals[i].Id, (int)value, 10);
+            var buf = _edfStore.ReadPhysicalData(_currentSelectedSignals[i].Id, (int)time, 10);
 
             var series = Series[i];
-            series.XOffset = value;
+            series.XOffset = time;
             series.Data = [.. buf];
         }
+    }
+
+    [RelayCommand]
+    private void ThumbReleased()
+    {
+        // cancel
+        _debouncingCts?.Cancel();
+
+        // refresh
+        LoadDataAt(CurrentTime);
     }
 
     public void Receive(ValueChangedMessage<IEnumerable<SignalViewModel>> message)
@@ -116,7 +145,5 @@ public partial class LineSeriesViewModel : BaseViewModel,
         base.Dispose(disposing);
 
         WeakReferenceMessenger.Default.Unregister<ValueChangedMessage<IEnumerable<SignalViewModel>>>(this);
-
-
     }
 }

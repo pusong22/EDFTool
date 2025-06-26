@@ -5,7 +5,9 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:chart="clr-namespace:EdfViewerApp.Chart"
              xmlns:local="clr-namespace:EdfViewerApp.View" 
+             xmlns:hr="clr-namespace:EdfViewerApp.Behavior" 
              xmlns:vm="clr-namespace:EdfViewerApp.ViewModel" 
+             xmlns:i="http://schemas.microsoft.com/xaml/behaviors" 
              d:DataContext="{d:DesignInstance Type=vm:LineSeriesViewModel}"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
@@ -28,8 +30,12 @@
                 Minimum="{Binding TimeMinimum}"
                 Maximum="{Binding TimeMaximum}"
                 Value="{Binding CurrentTime, Mode=TwoWay}"
-                TickPlacement="BottomRight"
+                TickPlacement="None"
                 IsSnapToTickEnabled="True"
-                TickFrequency="1" />
+                TickFrequency="1">
+            <i:Interaction.Behaviors>
+                <hr:SliderThumbDragBehavior DragCompletedCommand="{Binding ThumbReleasedCommand}"/>
+            </i:Interaction.Behaviors>
+        </Slider>
     </Grid>
 </UserControl>

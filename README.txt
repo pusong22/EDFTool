@@ -1,5 +1,5 @@
 # TODO
 - [X] monitor axes and series in core.
-- [] Read progress
+- [X] Read progress,debouncing when draging the slider stumb
 - [] optimize reading
 - [] optimize ploting
