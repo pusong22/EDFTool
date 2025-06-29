@@ -3,10 +3,14 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
 using Core.Kernel.Painting;
+using Core.Primitive;
 using EdfViewerApp.Chart;
 using EdfViewerApp.Chart.Drawing;
+using EdfViewerApp.Eeg;
 using EdfViewerApp.Store;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Windows;
 
 namespace EdfViewerApp.ViewModel;
 public partial class LineSeriesViewModel : BaseViewModel,
@@ -82,11 +86,49 @@ public partial class LineSeriesViewModel : BaseViewModel,
     {
         for (int i = 0; i < _currentSelectedSignals.Count; i++)
         {
-            var buf = _edfStore.ReadPhysicalData(_currentSelectedSignals[i].Id, (int)time, 10);
+            var signal = _currentSelectedSignals[i];
+
+            var buf = _edfStore.ReadPhysicalData(signal.Id, (int)time, 10);
 
             var series = Series[i];
             series.XOffset = time;
             series.Data = [.. buf];
+        }
+
+        var signal1 = _currentSelectedSignals[0];
+        var buf1 = _edfStore.ReadPhysicalData(signal1.Id, (int)time, 10);
+        var data = GenerateSpectrogram(buf1, signal1.SampleRate, 10);
+
+        WeakReferenceMessenger.Default.Send(data);
+    }
+
+    private IEnumerable<Coordinate> GenerateSpectrogram(double[] rawBuf, double sampleRate, int slices)
+    {
+        for (int i = 0; i < slices; i++)
+        {
+            // 1. 滤波
+            // order如何指定？
+            var filterBuf = EegProcessor.ApplyBandpassFilter(rawBuf, sampleRate, 1.0, 50.0, 10);
+            // 2. （可选）分段
+            // 3. 计算功率谱
+            var powerSpectrum = EegProcessor.ComputePowerSpectrum(filterBuf);
+
+            // 4. 计算频率对应的频点
+            var freqBins = EegProcessor.GetFrequencyBins(filterBuf.Length, sampleRate);
+
+            // 5. 计算频带功率
+            //var bandPower = EegProcessor.CalculateBandPower(powerSpectrum, freqBins);
+
+            // 5. 输出结果
+            //Debug.WriteLine($"Delta={bandPower.Delta:F2}, Theta={bandPower.Theta:F2}, Alpha={bandPower.Alpha:F2}, Beta={bandPower.Beta:F2}, Gamma={bandPower.Gamma:F2}");
+
+            for (int f = 0; f < freqBins.Length; f++)
+            {
+                double freqHz = freqBins[f];
+                double power = powerSpectrum[f];
+
+                yield return new Coordinate(i, freqHz, power);
+            }
         }
     }
 

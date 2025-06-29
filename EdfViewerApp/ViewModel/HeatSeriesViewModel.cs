@@ -1,4 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Messaging;
+using CommunityToolkit.Mvvm.Messaging.Messages;
 using Core.Kernel.Painting;
 using Core.Primitive;
 using EdfViewerApp.Chart;
@@ -6,7 +8,7 @@ using EdfViewerApp.Chart.Drawing;
 using System.Collections.ObjectModel;
 
 namespace EdfViewerApp.ViewModel;
-public partial class HeatSeriesViewModel : BaseViewModel
+public partial class HeatSeriesViewModel : BaseViewModel, IRecipient<IEnumerable<Coordinate>>
 {
     private static Color[] _default = [
         new Color(0, 0, 0, 255),      // 黑色 (低亮度)
@@ -25,23 +27,21 @@ public partial class HeatSeriesViewModel : BaseViewModel
         new Color(253, 231, 37)
     ];
 
+    public HeatSeriesViewModel()
+    {
+        WeakReferenceMessenger.Default.Register(this);
+    }
+
     [ObservableProperty]
     private ObservableCollection<Axis> _xAxes = [
-        new Axis() {
-        }];
+        new Axis() {}];
 
     [ObservableProperty]
     private ObservableCollection<Axis> _yAxes = [
-        new Axis() {
-        }];
+        new Axis() {}];
 
     [ObservableProperty]
-    private ObservableCollection<HeatSeries> _series = [
-        new HeatSeries() {
-            Values=[.. LoadMonaLisaPoints("Mona_Lisa.png", 300, 100)],
-            HeatMap = _viridisMap,
-            HeatPaint = new Brush(),
-        }];
+    private ObservableCollection<HeatSeries> _series = [];
 
     private static IEnumerable<Coordinate> LoadMonaLisaPoints(
         string imagePath, int targetWidth, int targetHeight)
@@ -84,4 +84,21 @@ public partial class HeatSeriesViewModel : BaseViewModel
         }
     }
 
+    public void Receive(IEnumerable<Coordinate> message)
+    {
+        Series.Clear();
+        Series.Add(new HeatSeries()
+        {
+            Values = [.. message],
+            HeatMap = _viridisMap,
+            HeatPaint = new Brush(),
+        });
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        base.Dispose(disposing);
+
+        WeakReferenceMessenger.Default.Unregister<IEnumerable<Coordinate>>(this);
+    }
 }
