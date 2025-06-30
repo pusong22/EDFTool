@@ -53,7 +53,7 @@
 
             <Grid Grid.Column="1">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="2*"/>
+                    <RowDefinition Height="*"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
                 <Border 
@@ -61,7 +61,8 @@
                     Margin="5"
                     BorderBrush="Gray"
                     BorderThickness="2">
-                    <vw:LineSeriesView
+                    <vw:LineSeriesView 
+                        Margin="20"
                         DataContext="{Binding LineSeriesViewModel}" />
                 </Border>
                 <Border 
@@ -70,6 +71,7 @@
                      BorderBrush="Gray"
                      BorderThickness="2">
                      <vw:HeatSeriesView
+                         Margin="20"
                          DataContext="{Binding HeatSeriesViewModel}" />
                 </Border>
             </Grid>

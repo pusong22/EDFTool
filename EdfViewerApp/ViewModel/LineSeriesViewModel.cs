@@ -97,39 +97,41 @@ public partial class LineSeriesViewModel : BaseViewModel,
 
         var signal1 = _currentSelectedSignals[0];
         var buf1 = _edfStore.ReadPhysicalData(signal1.Id, (int)time, 10);
-        var data = GenerateSpectrogram(buf1, signal1.SampleRate, 10);
 
-        WeakReferenceMessenger.Default.Send(data);
-    }
+        int sampleEpoch = (int)(signal1.SampleRate * 1.0d);
+        int overlap = (int)(sampleEpoch * 0);
+        var result = EegProcessor.ComputeSpectrogram(
+            buf1,
+            signal1.SampleRate,
+            sampleEpoch,
+            overlap,
+            0.5,
+            50.0);
+        var data = new List<Coordinate>();
 
-    private IEnumerable<Coordinate> GenerateSpectrogram(double[] rawBuf, double sampleRate, int slices)
-    {
-        for (int i = 0; i < slices; i++)
+        for (int r = 0; r < result.SpectrogramData!.GetLength(0); r++) // 频率 (Y轴)
         {
-            // 1. 滤波
-            // order如何指定？
-            var filterBuf = EegProcessor.ApplyBandpassFilter(rawBuf, sampleRate, 1.0, 50.0, 10);
-            // 2. （可选）分段
-            // 3. 计算功率谱
-            var powerSpectrum = EegProcessor.ComputePowerSpectrum(filterBuf);
+            double currentFrequencyHz = result.FrequenciesHz![r];
 
-            // 4. 计算频率对应的频点
-            var freqBins = EegProcessor.GetFrequencyBins(filterBuf.Length, sampleRate);
+            // 可以选择在这里进行频率范围的筛选，例如只保留0Hz到31Hz的数据
+            //if (currentFrequencyHz < 0 || currentFrequencyHz > 31.0)
+            //    continue; // 跳过超出范围的频率
 
-            // 5. 计算频带功率
-            //var bandPower = EegProcessor.CalculateBandPower(powerSpectrum, freqBins);
-
-            // 5. 输出结果
-            //Debug.WriteLine($"Delta={bandPower.Delta:F2}, Theta={bandPower.Theta:F2}, Alpha={bandPower.Alpha:F2}, Beta={bandPower.Beta:F2}, Gamma={bandPower.Gamma:F2}");
-
-            for (int f = 0; f < freqBins.Length; f++)
+            for (int c = 0; c < result.SpectrogramData!.GetLength(1); c++) // 时间 (X轴)
             {
-                double freqHz = freqBins[f];
-                double power = powerSpectrum[f];
-
-                yield return new Coordinate(i, freqHz, power);
+                double power = result.SpectrogramData[r, c];
+                // 过滤掉 MinValue (log(0) 产生的)
+                if (power > double.MinValue)
+                {
+                    double currentTimeSeconds = result.TimesSeconds![c];
+                    // X=时间索引, Y=频率索引, Weight=功率
+                    var coord = new Coordinate(currentTimeSeconds, currentFrequencyHz, power);
+                    data.Add(coord);
+                }
             }
         }
+
+        WeakReferenceMessenger.Default.Send(data);
     }
 
     [RelayCommand]

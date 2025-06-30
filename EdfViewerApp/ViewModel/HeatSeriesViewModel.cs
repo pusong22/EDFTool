@@ -5,10 +5,11 @@ using Core.Kernel.Painting;
 using Core.Primitive;
 using EdfViewerApp.Chart;
 using EdfViewerApp.Chart.Drawing;
+using SkiaSharp;
 using System.Collections.ObjectModel;
 
 namespace EdfViewerApp.ViewModel;
-public partial class HeatSeriesViewModel : BaseViewModel, IRecipient<IEnumerable<Coordinate>>
+public partial class HeatSeriesViewModel : BaseViewModel, IRecipient<List<Coordinate>>
 {
     private static Color[] _default = [
         new Color(0, 0, 0, 255),      // 黑色 (低亮度)
@@ -34,11 +35,23 @@ public partial class HeatSeriesViewModel : BaseViewModel, IRecipient<IEnumerable
 
     [ObservableProperty]
     private ObservableCollection<Axis> _xAxes = [
-        new Axis() {}];
+        new Axis()
+        {
+            Name = "Time",
+            NamePaint = new Brush(),
+            LabelPaint = new Brush(),
+            Labeler = l => l.ToString("N2")
+        }];
 
     [ObservableProperty]
     private ObservableCollection<Axis> _yAxes = [
-        new Axis() {}];
+        new Axis()
+        {
+            Name = "Frequent",
+            NamePaint = new Brush(),
+            LabelPaint = new Brush(),
+            Labeler = l => l.ToString("N2")
+        }];
 
     [ObservableProperty]
     private ObservableCollection<HeatSeries> _series = [];
@@ -84,13 +97,17 @@ public partial class HeatSeriesViewModel : BaseViewModel, IRecipient<IEnumerable
         }
     }
 
-    public void Receive(IEnumerable<Coordinate> message)
+    public void Receive(List<Coordinate> message)
     {
         Series.Clear();
         Series.Add(new HeatSeries()
         {
             Values = [.. message],
-            HeatMap = _viridisMap,
+            HeatMap = [
+                  new Color(0, 0, 255), // 蓝色 (低功率)
+                  new Color(0, 255, 0), // 绿色 (中等功率)
+                  new Color(255, 0, 0), // 红色 (高功率)
+                ],
             HeatPaint = new Brush(),
         });
     }
