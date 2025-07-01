@@ -1,51 +1,67 @@
-using MathNet.Filtering.FIR;
-using MathNet.Filtering.Windowing;
+using MathNet.Numerics;
 using MathNet.Numerics.IntegralTransforms;
 
 namespace EdfViewerApp.Eeg;
 public class EegProcessor
 {
-    public static List<double[]> SegmentSignal(double[] signal, int samples, int overlapSamples)
+    public static IEnumerable<double[]> SegmentSignal(double[] signal, int samplesPerEpoch, int overlapSamples)
     {
-        int samplesPerEpoch = samples;
-        int stepSamples = samplesPerEpoch - overlapSamples;
-        if (stepSamples <= 0) // 确保步长至少为1，避免无限循环或过小步长
-            stepSamples = 1;
+        if (signal == null)
+            throw new ArgumentNullException(nameof(signal));
+        if (samplesPerEpoch <= 0)
+            throw new ArgumentOutOfRangeException(nameof(samplesPerEpoch), "Samples per epoch must be positive.");
+        if (overlapSamples < 0 || overlapSamples >= samplesPerEpoch)
+            throw new ArgumentOutOfRangeException(nameof(overlapSamples), "Overlap must be non-negative and less than samples per epoch.");
 
-        List<double[]> epochs = [];
+        int step = samplesPerEpoch - overlapSamples;
 
-        for (int start = 0; start + samplesPerEpoch <= signal.Length; start += stepSamples)
+        for (int start = 0; start < signal.Length; start += step)
         {
-            double[] epoch = new double[samplesPerEpoch];
-            Array.Copy(signal, start, epoch, 0, samplesPerEpoch);
-            epochs.Add(epoch);
+            double[] epoch = new double[samplesPerEpoch]; // 初始化默认全是 0
+            int remaining = signal.Length - start;
+            int copyLength = Math.Min(samplesPerEpoch, remaining);
+
+            Array.Copy(signal, start, epoch, 0, copyLength);
+            yield return epoch;
         }
-        return epochs;
     }
 
     public static double[] ComputePowerSpectrum(double[] signal)
     {
+        if (signal == null)
+            throw new ArgumentNullException(nameof(signal));
+        if (signal.Length == 0)
+            throw new ArgumentException("Signal cannot be empty.", nameof(signal));
+
         int n = signal.Length;
-        // MathNet要求复数数组，实部是信号，虚部为0
+        // 复数数组，实部是信号，虚部为0
         var complexSamples = new System.Numerics.Complex[n];
         for (int i = 0; i < n; i++)
             complexSamples[i] = new System.Numerics.Complex(signal[i], 0);
 
-        Fourier.Forward(complexSamples);
+        Fourier.Forward(complexSamples, FourierOptions.Matlab);
 
         // 计算功率谱（幅度平方）
-        double[] powerSpectrum = new double[n / 2];
-        for (int i = 0; i < n / 2; i++)
-            powerSpectrum[i] = complexSamples[i].Magnitude * complexSamples[i].Magnitude;
-
+        int numUniqueFrequencies = n / 2 + 1;
+        double[] powerSpectrum = new double[numUniqueFrequencies];
+        // DC 分量 (0 Hz) - 不乘以 2
+        powerSpectrum[0] = complexSamples[0].MagnitudeSquared();
+        // 正频率分量 (不包括 Nyquist 频率) - 乘以 2
+        for (int i = 1; i < n / 2; i++)
+            powerSpectrum[i] = 2 * complexSamples[i].MagnitudeSquared();
+        // 奈奎斯特频率分量 (如果 FFT 长度是偶数) - 不乘以 2
+        if (n % 2 == 0)
+            powerSpectrum[n / 2] = complexSamples[n / 2].MagnitudeSquared();
+      
         return powerSpectrum;
     }
 
     public static double[] GetFrequencyBins(int fftLength, double sampleRate)
     {
         double freqResolution = sampleRate / fftLength;
-        double[] freqBins = new double[fftLength / 2];
-        for (int i = 0; i < fftLength / 2; i++)
+        int numUniqueFrequencies = fftLength / 2 + 1; // 包含直流和奈奎斯特频率
+        double[] freqBins = new double[numUniqueFrequencies];
+        for (int i = 0; i < numUniqueFrequencies; i++)
             freqBins[i] = i * freqResolution;
 
         return freqBins;
@@ -53,11 +69,7 @@ public class EegProcessor
 
     public static double[] GenerateHanningWindow(int size)
     {
-        var hann = new HannWindow()
-        {
-            Width = size,
-        };
-        return hann.CopyToArray();
+        return Window.Hann(size);
     }
 
     // 时频
@@ -65,77 +77,53 @@ public class EegProcessor
         double[] signal,
         double sampleRate,
         int samplesPerEpoch, // epoch length in samples
-        int overlapSamples,
-        double lowCutOff,
-        double highCutOff,
-        int halfOrder = 128)
+        int overlapSamples)
     {
-        var segments = SegmentSignal(signal, samplesPerEpoch, overlapSamples);
+        if (signal == null || signal.Length == 0)
+            throw new ArgumentException("Signal cannot be null or empty.", nameof(signal));
+        if (sampleRate <= 0)
+            throw new ArgumentOutOfRangeException(nameof(sampleRate), "Sample rate must be positive.");
+        if (samplesPerEpoch <= 0 || (samplesPerEpoch & (samplesPerEpoch - 1)) != 0)
+            throw new ArgumentException("samplesPerEpoch must be a power of 2 and positive.", nameof(samplesPerEpoch));
+        if (overlapSamples < 0 || overlapSamples >= samplesPerEpoch)
+            throw new ArgumentException("overlapSamples must be non-negative and less than samplesPerEpoch.", nameof(overlapSamples));
+
+        var segments = SegmentSignal(signal, samplesPerEpoch, overlapSamples).ToList();
         int timeSteps = segments.Count;
         int fftLength = segments[0].Length;
-        int freqSteps = fftLength / 2;
+        int freqSteps = fftLength / 2 + 1;
 
         var window = GenerateHanningWindow(fftLength);
         double[,] spectrogram = new double[freqSteps, timeSteps];
-        double[] filterCoefficients = FirCoefficients.BandPass(sampleRate, lowCutOff, highCutOff, halfOrder);
-        OnlineFirFilter segmentFilter = new(filterCoefficients);
-
+      
         double[] frequenciesHz = GetFrequencyBins(fftLength, sampleRate);
         double[] timesSeconds = new double[timeSteps];
 
         // Calculate the actual time step duration based on samples and overlap
         double stepDurationSeconds = (double)(samplesPerEpoch - overlapSamples) / sampleRate;
         for (int t = 0; t < timeSteps; t++)
-        {
             timesSeconds[t] = t * stepDurationSeconds; // 每个时间步的起始时间
-        }
 
+        var windowed = new double[fftLength];
         for (int t = 0; t < timeSteps; t++)
         {
             var segment = segments[t];
-            // filter
-            segmentFilter.Reset();
-            var filteredSegment = new double[segment.Length];
-            for (int i = 0; i < segment.Length; i++)
-            {
-                filteredSegment[i] = segmentFilter.ProcessSample(segment[i]);
-            }
-
-            var windowed = new double[fftLength];
+           
             for (int i = 0; i < fftLength; i++)
-            {
-                windowed[i] = filteredSegment[i] * window[i];
-            }
+                windowed[i] = segment[i] * window[i];
 
             var powerSpectrum = ComputePowerSpectrum(windowed);
+            const double epsilon = 1e-10;
             for (int f = 0; f < freqSteps; f++)
-            {
-                spectrogram[f, t] = Math.Log10(powerSpectrum[f] + 1e-10); // 对数功率，避免负无穷
-            }
-        }
+                spectrogram[f, t] = 10 * Math.Log10(powerSpectrum[f] + epsilon);
 
-        double minPowerValue = spectrogram.Cast<double>().Min();
-        double maxPowerValue = spectrogram.Cast<double>().Max();
-
-        double[,] normalizedSpectrogram = new double[freqSteps, timeSteps];
-        for (int f = 0; f < freqSteps; f++)
-        {
-            for (int t = 0; t < timeSteps; t++)
-            {
-                if (maxPowerValue == minPowerValue)
-                    normalizedSpectrogram[f, t] = 0.5; // 或其他默认值
-                else
-                    normalizedSpectrogram[f, t] = (spectrogram[f, t] - minPowerValue) / (maxPowerValue - minPowerValue);
-            }
         }
 
         return new SpectrogramResult
         {
-            SpectrogramData = normalizedSpectrogram,
+            SpectrogramData = spectrogram,
             FrequenciesHz = frequenciesHz,
             TimesSeconds = timesSeconds,
-            MinPower = minPowerValue,
-            MaxPower = maxPowerValue
         };
     }
 
@@ -181,8 +169,6 @@ public class SpectrogramResult
     public double[,]? SpectrogramData { get; set; } // 存储功率（已对数变换和归一化）
     public double[]? FrequenciesHz { get; set; }     // 存储每个频率bin对应的Hz值
     public double[]? TimesSeconds { get; set; }      // 存储每个时间步对应的秒值
-    public double MinPower { get; set; }           // 归一化前的最小功率值
-    public double MaxPower { get; set; }           // 归一化前的最大功率值
 }
 
 public class BandPower

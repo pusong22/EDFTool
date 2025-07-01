@@ -104,9 +104,13 @@ public partial class HeatSeriesViewModel : BaseViewModel, IRecipient<List<Coordi
         {
             Values = [.. message],
             HeatMap = [
-                  new Color(0, 0, 255), // 蓝色 (低功率)
-                  new Color(0, 255, 0), // 绿色 (中等功率)
-                  new Color(255, 0, 0), // 红色 (高功率)
+                    new Color(0, 0, 128),    // 深蓝色 - 非常低
+                    new Color(0, 128, 255),  // 淡蓝 - 低
+                    new Color(0, 255, 255),  // 青色 - 稍低
+                    new Color(0, 255, 0),    // 绿色 - 正常值附近
+                    new Color(255, 255, 0),  // 黄色 - 偏高
+                    new Color(255, 128, 0),  // 橙色 - 高
+                    new Color(255, 0, 0)     // 红色 - 非常高
                 ],
             HeatPaint = new Brush(),
         });

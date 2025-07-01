@@ -8,6 +8,7 @@ using EdfViewerApp.Chart;
 using EdfViewerApp.Chart.Drawing;
 using EdfViewerApp.Eeg;
 using EdfViewerApp.Store;
+using MathNet.Filtering.FIR;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Windows;
@@ -95,27 +96,35 @@ public partial class LineSeriesViewModel : BaseViewModel,
             series.Data = [.. buf];
         }
 
-        var signal1 = _currentSelectedSignals[0];
-        var buf1 = _edfStore.ReadPhysicalData(signal1.Id, (int)time, 10);
+        if (_currentSelectedSignals.Count <= 0) return;
 
-        int sampleEpoch = (int)(signal1.SampleRate * 1.0d);
-        int overlap = (int)(sampleEpoch * 0);
+        var signal1 = _currentSelectedSignals[0];
+        var buf1 = _edfStore.ReadPhysicalData(signal1.Id, (int)time, 4478);
+
+        //double[] filterCoefficients = FirCoefficients.BandPass(signal1.SampleRate, 0.5, 50.0, 0);
+        //OnlineFirFilter filter = new(filterCoefficients);
+        //var filtered = new double[buf1.Length];
+        //for (int i = 0; i < buf1.Length; i++)
+        //{
+        //    filtered[i] = filter.ProcessSample(buf1[i]);
+        //}
+
+        int sampleEpoch = 512;
+        int overlap = 256;
         var result = EegProcessor.ComputeSpectrogram(
             buf1,
             signal1.SampleRate,
             sampleEpoch,
-            overlap,
-            0.5,
-            50.0);
+            overlap);
         var data = new List<Coordinate>();
 
         for (int r = 0; r < result.SpectrogramData!.GetLength(0); r++) // 频率 (Y轴)
         {
             double currentFrequencyHz = result.FrequenciesHz![r];
 
-            // 可以选择在这里进行频率范围的筛选，例如只保留0Hz到31Hz的数据
-            //if (currentFrequencyHz < 0 || currentFrequencyHz > 31.0)
-            //    continue; // 跳过超出范围的频率
+            //可以选择在这里进行频率范围的筛选，例如只保留0Hz到31Hz的数据
+            if (currentFrequencyHz < 0 || currentFrequencyHz > 31.0)
+                break; // 跳过超出范围的频率
 
             for (int c = 0; c < result.SpectrogramData!.GetLength(1); c++) // 时间 (X轴)
             {
