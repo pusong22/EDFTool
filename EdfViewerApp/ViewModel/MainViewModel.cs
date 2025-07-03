@@ -37,6 +37,7 @@ public partial class MainViewModel(EDFStore edfStore,
         edfStore.OpenFile(selectedFilePath);
 
         SignalSelectorViewModel?.LoadSignalsCommand.Execute(null);
+        HeatSeriesViewModel?.LoadChannelsCommand.Execute(null);
     }
 
     [RelayCommand]

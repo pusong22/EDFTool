@@ -1,15 +1,18 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
 using Core.Kernel.Painting;
 using Core.Primitive;
 using EdfViewerApp.Chart;
 using EdfViewerApp.Chart.Drawing;
+using EdfViewerApp.Eeg;
+using EdfViewerApp.Store;
 using SkiaSharp;
 using System.Collections.ObjectModel;
 
 namespace EdfViewerApp.ViewModel;
-public partial class HeatSeriesViewModel : BaseViewModel, IRecipient<List<Coordinate>>
+public partial class HeatSeriesViewModel(EDFStore edfStore) : BaseViewModel
 {
     private static Color[] _default = [
         new Color(0, 0, 0, 255),      // 黑色 (低亮度)
@@ -27,11 +30,6 @@ public partial class HeatSeriesViewModel : BaseViewModel, IRecipient<List<Coordi
         new Color(170, 220, 50),
         new Color(253, 231, 37)
     ];
-
-    public HeatSeriesViewModel()
-    {
-        WeakReferenceMessenger.Default.Register(this);
-    }
 
     [ObservableProperty]
     private ObservableCollection<Axis> _xAxes = [
@@ -55,6 +53,83 @@ public partial class HeatSeriesViewModel : BaseViewModel, IRecipient<List<Coordi
 
     [ObservableProperty]
     private ObservableCollection<HeatSeries> _series = [];
+
+    [ObservableProperty]
+    private ObservableCollection<SignalViewModel> _channels = [];
+
+    [ObservableProperty]
+    private SignalViewModel? _selectedChannel;
+
+    [RelayCommand]
+    private void LoadChannels()
+    {
+        if (!edfStore.Open) return;
+
+        Channels = new(edfStore.SignalVMs);
+        SelectedChannel = Channels.FirstOrDefault();
+    }
+
+    partial void OnSelectedChannelChanged(SignalViewModel? value)
+    {
+        if (value is null) return;
+
+        double[] buf = edfStore.ReadPhysicalData(value.Id);
+
+        //double[] filterCoefficients = FirCoefficients.BandPass(signal1.SampleRate, 0.5, 50.0, 0);
+        //OnlineFirFilter filter = new(filterCoefficients);
+        //var filtered = new double[buf1.Length];
+        //for (int i = 0; i < buf1.Length; i++)
+        //{
+        //    filtered[i] = filter.ProcessSample(buf1[i]);
+        //}
+
+        int sampleEpoch = 512;
+        int overlap = 256;
+        var result = EegProcessor.ComputeSpectrogram(
+            buf,
+            value.SampleRate,
+            sampleEpoch,
+            overlap);
+        var data = new List<Coordinate>();
+
+        for (int r = 0; r < result.SpectrogramData!.GetLength(0); r++) // 频率 (Y轴)
+        {
+            double currentFrequencyHz = result.FrequenciesHz![r];
+
+            //可以选择在这里进行频率范围的筛选，例如只保留0Hz到31Hz的数据
+            if (currentFrequencyHz < 0 || currentFrequencyHz > 31.0)
+                break; // 跳过超出范围的频率
+
+            for (int c = 0; c < result.SpectrogramData!.GetLength(1); c++) // 时间 (X轴)
+            {
+                double power = result.SpectrogramData[r, c];
+                // 过滤掉 MinValue (log(0) 产生的)
+                if (power > double.MinValue)
+                {
+                    double currentTimeSeconds = result.TimesSeconds![c];
+                    // X=时间索引, Y=频率索引, Weight=功率
+                    var coord = new Coordinate(currentTimeSeconds, currentFrequencyHz, power);
+                    data.Add(coord);
+                }
+            }
+        }
+
+        Series.Clear();
+        Series.Add(new HeatSeries()
+        {
+            Values = [.. data],
+            HeatMap = [
+                    new Color(0, 0, 128),    // 深蓝色 - 非常低
+                    new Color(0, 128, 255),  // 淡蓝 - 低
+                    new Color(0, 255, 255),  // 青色 - 稍低
+                    new Color(0, 255, 0),    // 绿色 - 正常值附近
+                    new Color(255, 255, 0),  // 黄色 - 偏高
+                    new Color(255, 128, 0),  // 橙色 - 高
+                    new Color(255, 0, 0)     // 红色 - 非常高
+                ],
+            HeatPaint = new Brush(),
+        });
+    }
 
     private static IEnumerable<Coordinate> LoadMonaLisaPoints(
         string imagePath, int targetWidth, int targetHeight)
@@ -95,31 +170,5 @@ public partial class HeatSeriesViewModel : BaseViewModel, IRecipient<List<Coordi
                 yield return new Coordinate(x, y, z);
             }
         }
-    }
-
-    public void Receive(List<Coordinate> message)
-    {
-        Series.Clear();
-        Series.Add(new HeatSeries()
-        {
-            Values = [.. message],
-            HeatMap = [
-                    new Color(0, 0, 128),    // 深蓝色 - 非常低
-                    new Color(0, 128, 255),  // 淡蓝 - 低
-                    new Color(0, 255, 255),  // 青色 - 稍低
-                    new Color(0, 255, 0),    // 绿色 - 正常值附近
-                    new Color(255, 255, 0),  // 黄色 - 偏高
-                    new Color(255, 128, 0),  // 橙色 - 高
-                    new Color(255, 0, 0)     // 红色 - 非常高
-                ],
-            HeatPaint = new Brush(),
-        });
-    }
-
-    protected override void Dispose(bool disposing)
-    {
-        base.Dispose(disposing);
-
-        WeakReferenceMessenger.Default.Unregister<IEnumerable<Coordinate>>(this);
     }
 }

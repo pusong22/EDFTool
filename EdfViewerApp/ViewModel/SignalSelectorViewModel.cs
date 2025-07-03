@@ -16,12 +16,7 @@ public partial class SignalSelectorViewModel(EDFStore edfStore) : BaseViewModel
     {
         if (!edfStore.Open) return;
 
-        Signals.Clear();
-
-        foreach (SignalViewModel signalViewModel in edfStore.ReadInfo())
-        {
-            Signals.Add(signalViewModel);
-        }
+        Signals = new (edfStore.SignalVMs); 
     }
 
     [RelayCommand]

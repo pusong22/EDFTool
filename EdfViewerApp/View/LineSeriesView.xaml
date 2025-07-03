@@ -20,7 +20,6 @@
 
         <chart:CartesianChartView
             Grid.Row="0"
-            Title="{Binding Title}"
             XAxes="{Binding XAxes}"
             YAxes="{Binding YAxes}"
             Series="{Binding Series}"/>

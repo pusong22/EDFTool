@@ -3,22 +3,20 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
 using Core.Kernel.Painting;
-using Core.Primitive;
 using EdfViewerApp.Chart;
 using EdfViewerApp.Chart.Drawing;
-using EdfViewerApp.Eeg;
 using EdfViewerApp.Store;
-using MathNet.Filtering.FIR;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.Windows;
 
 namespace EdfViewerApp.ViewModel;
 public partial class LineSeriesViewModel : BaseViewModel,
     IRecipient<ValueChangedMessage<IEnumerable<SignalViewModel>>>
 {
+    private const int _step = 10;
+    private bool _resetThumb = false;
     private readonly EDFStore _edfStore;
     private CancellationTokenSource? _debouncingCts;
+    private List<SignalViewModel> _currentSelectedSignals = [];
 
     [ObservableProperty]
     private ObservableCollection<Axis> _xAxes = [];
@@ -30,14 +28,6 @@ public partial class LineSeriesViewModel : BaseViewModel,
     private ObservableCollection<LineSeriesProxy> _series = [];
 
     [ObservableProperty]
-    private LabelVisual _title = new()
-    {
-        Text = "Test",
-        TextPaint = new Brush() { FontSize = 18 },
-    };
-
-
-    [ObservableProperty]
     private double _timeMinimum = 0d;
 
     [ObservableProperty]
@@ -45,28 +35,29 @@ public partial class LineSeriesViewModel : BaseViewModel,
 
     [ObservableProperty]
     private double _currentTime;
-    private List<SignalViewModel> _currentSelectedSignals = [];
 
     public LineSeriesViewModel(EDFStore edfStore)
     {
         WeakReferenceMessenger.Default.Register(this);
 
         _edfStore = edfStore;
-        _edfStore.InitializeTimeRangeHandler += InitializeTimeRange;
     }
 
-    private void InitializeTimeRange(object s, EventArgs e)
+    private void ResetThumb()
     {
-        double totalDuration = _edfStore.GetTotalDurationInSeconds(); // Example method
-        TimeMinimum = 0; // EDF typically starts at time 0
-        TimeMaximum = totalDuration;
+        _resetThumb = true;
+        double totalDuration = _edfStore.GetTotalDurationInSeconds();
+        TimeMinimum = 0;
+        TimeMaximum = totalDuration / _step;
 
-        // Adjust the slider's initial position to the beginning
-        CurrentTime = TimeMinimum; // This will trigger OnCurrentTimeChanged and load initial data
+        CurrentTime = 0;
+        _resetThumb = false;
     }
 
     partial void OnCurrentTimeChanged(double value)
     {
+        if (_resetThumb) return;
+
         if (value >= TimeMaximum) return;
 
         // debouncing
@@ -85,62 +76,20 @@ public partial class LineSeriesViewModel : BaseViewModel,
 
     private void LoadDataAt(double time)
     {
+        double actualTime = time * _step;
+        if (actualTime >= TimeMaximum)
+            actualTime -= _step;
+
         for (int i = 0; i < _currentSelectedSignals.Count; i++)
         {
             var signal = _currentSelectedSignals[i];
 
-            var buf = _edfStore.ReadPhysicalData(signal.Id, (int)time, 10);
+            var buf = _edfStore.ReadPhysicalData(signal.Id, (int)actualTime, _step);
 
             var series = Series[i];
-            series.XOffset = time;
+            series.XOffset = actualTime;
             series.Data = [.. buf];
         }
-
-        if (_currentSelectedSignals.Count <= 0) return;
-
-        var signal1 = _currentSelectedSignals[0];
-        var buf1 = _edfStore.ReadPhysicalData(signal1.Id, (int)time, 4478);
-
-        //double[] filterCoefficients = FirCoefficients.BandPass(signal1.SampleRate, 0.5, 50.0, 0);
-        //OnlineFirFilter filter = new(filterCoefficients);
-        //var filtered = new double[buf1.Length];
-        //for (int i = 0; i < buf1.Length; i++)
-        //{
-        //    filtered[i] = filter.ProcessSample(buf1[i]);
-        //}
-
-        int sampleEpoch = 512;
-        int overlap = 256;
-        var result = EegProcessor.ComputeSpectrogram(
-            buf1,
-            signal1.SampleRate,
-            sampleEpoch,
-            overlap);
-        var data = new List<Coordinate>();
-
-        for (int r = 0; r < result.SpectrogramData!.GetLength(0); r++) // 频率 (Y轴)
-        {
-            double currentFrequencyHz = result.FrequenciesHz![r];
-
-            //可以选择在这里进行频率范围的筛选，例如只保留0Hz到31Hz的数据
-            if (currentFrequencyHz < 0 || currentFrequencyHz > 31.0)
-                break; // 跳过超出范围的频率
-
-            for (int c = 0; c < result.SpectrogramData!.GetLength(1); c++) // 时间 (X轴)
-            {
-                double power = result.SpectrogramData[r, c];
-                // 过滤掉 MinValue (log(0) 产生的)
-                if (power > double.MinValue)
-                {
-                    double currentTimeSeconds = result.TimesSeconds![c];
-                    // X=时间索引, Y=频率索引, Weight=功率
-                    var coord = new Coordinate(currentTimeSeconds, currentFrequencyHz, power);
-                    data.Add(coord);
-                }
-            }
-        }
-
-        WeakReferenceMessenger.Default.Send(data);
     }
 
     [RelayCommand]
@@ -155,15 +104,16 @@ public partial class LineSeriesViewModel : BaseViewModel,
 
     public void Receive(ValueChangedMessage<IEnumerable<SignalViewModel>> message)
     {
+        // Reset thumb
+        ResetThumb();
+
         _currentSelectedSignals = [.. message.Value]; // Store selected signals for later use
 
         XAxes.Clear();
         XAxes.Add(new Axis()
         {
-            Name = "Time",
-            NamePaint = new Brush(),
+            LabelPaint = new Brush(),
             AxisLinePaint = new Pen(),
-            SeparatorPaint = new Pen(new DashEffectSetting([3, 3])),
             Labeler = l => l.ToString("N2")
         });
 
@@ -175,7 +125,6 @@ public partial class LineSeriesViewModel : BaseViewModel,
                 Name = item.Label,
                 NamePaint = new Brush(),
                 AxisLinePaint = new Pen(),
-                SeparatorPaint = new Pen(new DashEffectSetting([3, 3])),
                 Labeler = l => l.ToString("N2"),
             });
         }

@@ -5,10 +5,10 @@ namespace EdfViewerApp.Store;
 public class EDFStore
 {
     private EdfParser? _parser;
+    public List<SignalViewModel> SignalVMs { get; private set; } = [];
 
     public bool Open { get; private set; }
     public string? EdfFilePath { get; private set; }
-    public event EventHandler? InitializeTimeRangeHandler;
 
     public void OpenFile(string filePath)
     {
@@ -17,24 +17,19 @@ public class EDFStore
         Open = true;
         EdfFilePath = filePath;
 
-        InitializeTimeRangeHandler?.Invoke(this, EventArgs.Empty);
-    }
-
-    public IEnumerable<SignalViewModel> ReadInfo()
-    {
-        if (_parser is null)
-            throw new InvalidOperationException("_parser is not open.");
-
         int id = 0;
 
+        SignalVMs.Clear();
         foreach (var signalInfo in _parser.Signals)
         {
-            yield return new SignalViewModel()
+            SignalViewModel vm = new()
             {
                 Id = id++,
                 Label = signalInfo.Label,
                 SampleRate = signalInfo.SampleRate,
             };
+
+            SignalVMs.Add(vm);
         }
     }
 
@@ -54,5 +49,15 @@ public class EDFStore
             throw new InvalidOperationException("_parser is not open.");
 
         return _parser.NumberOfDataRecords * _parser.DurationOfDataRecordSeconds;
+    }
+
+    public double[] ReadPhysicalData(int index)
+    {
+        if (_parser is null)
+            throw new InvalidOperationException("_parser is not open.");
+
+        double[] buf = _parser.ReadSignalData(index, 0, _parser.NumberOfDataRecords);
+
+        return buf;
     }
 }
