@@ -23,6 +23,13 @@
             DisplayMemberPath="Label"
             SelectedItem="{Binding SelectedChannel}"/>
 
+        <!--<Image Grid.Row="1" 
+               Source="{Binding SpectrogramBitmap}"
+               RenderOptions.BitmapScalingMode="LowQuality"
+               Stretch="Fill" 
+               HorizontalAlignment="Center"
+               VerticalAlignment="Center"
+               Margin="10"/>-->
         <chart:CartesianChartView
             Grid.Row="1"
             XAxes="{Binding XAxes}"

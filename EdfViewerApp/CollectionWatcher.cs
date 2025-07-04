@@ -21,20 +21,20 @@ public class CollectionWatcher<TCollection>(Action updateAction) : IDisposable
             _watchedCollection = value;
             SubscribeFromCollection(_watchedCollection);
 
-            _updateAction?.Invoke();
-            if (_watchedCollection is INotifyCollectionChanged oldNotifier)
-            {
-                oldNotifier.CollectionChanged -= OnInternalCollectionChanged;
-            }
+            //_updateAction?.Invoke();
+            //if (_watchedCollection is INotifyCollectionChanged oldNotifier)
+            //{
+            //    oldNotifier.CollectionChanged -= OnInternalCollectionChanged;
+            //}
 
-            _watchedCollection = value;
+            //_watchedCollection = value;
 
-            if (_watchedCollection is INotifyCollectionChanged newNotifier)
-            {
-                newNotifier.CollectionChanged += OnInternalCollectionChanged;
-            }
+            //if (_watchedCollection is INotifyCollectionChanged newNotifier)
+            //{
+            //    newNotifier.CollectionChanged += OnInternalCollectionChanged;
+            //}
 
-            _updateAction?.Invoke();
+            //_updateAction?.Invoke();
         }
     }
 
