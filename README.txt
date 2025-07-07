@@ -3,6 +3,11 @@
 - [X] Read progress,debouncing when draging the slider stumb
 - [] optimize reading
 - [] optimize ploting
+- [x] psd algrothim
+- [x] 时间-频率二维热力图（Spectrogram）
+- [] 通道-频段二维热力图
+- [] 空间-时间二维热力图
+- [] 脑图实现
 
 
 # QEEG(Quantitative Electroencephalogram)
@@ -16,9 +21,3 @@
 2. psd: Power distribution at each frequency
 3. frequency band power
    delta:(0.5-4),theta(4-8), alpha(8-12),beta(12-30),gamma(>30)
-
-- [] 时间-频率二维热力图（Spectrogram）
-- [] 通道-频段二维热力图
-- [] 空间-时间二维热力图
-
-# [ ]脑图实现

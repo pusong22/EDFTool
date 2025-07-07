@@ -56,8 +56,6 @@ public partial class HeatSeriesViewModel(EDFStore edfStore) : BaseViewModel
     [ObservableProperty]
     private SignalViewModel? _selectedChannel;
 
-    private Stopwatch sb = new ();
-
     [RelayCommand]
     private void LoadChannels()
     {
@@ -67,14 +65,12 @@ public partial class HeatSeriesViewModel(EDFStore edfStore) : BaseViewModel
         SelectedChannel = Channels.FirstOrDefault();
     }
 
-    partial void OnSelectedChannelChanged(SignalViewModel? value)
+    partial void OnSelectedChannelChanged(SignalViewModel? signalVM)
     {
-        if (value is null) return;
-        List<Coordinate> data = new();
+        if (signalVM is null) return;
 
-        sb.Restart();
         // 耗时
-        double[] buf = edfStore.ReadPhysicalData(value.Id);
+        double[] buf = edfStore.ReadPhysicalData(signalVM.Id);
         // 耗时!!!
         //double[] filterCoefficients = FirCoefficients.BandPass(value.SampleRate, 0.5, 50.0, 0);
         //OnlineFirFilter filter = new(filterCoefficients);
@@ -92,9 +88,7 @@ public partial class HeatSeriesViewModel(EDFStore edfStore) : BaseViewModel
             nperseg: 500,
             noverlap: 250);
 
-        sb.Stop();
-        Debug.WriteLine($"{sb.ElapsedMilliseconds} ms");
-
+        List<Coordinate> data = new();
         for (int r = 0; r < spectrogram.GetLength(0); r++)
         {
             double currentTimeSeconds = times[r];

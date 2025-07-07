@@ -1,6 +1,7 @@
 using MathNet.Numerics;
 using MathNet.Numerics.IntegralTransforms;
 using System.Numerics;
+using System.Windows.Markup;
 
 namespace EdfViewerApp.Eeg;
 
@@ -9,26 +10,44 @@ public class WelchPSD
     public static (double[] frequencies, double[] psd) Compute(
         double[] x,
         double fs = 1.0,
-        string windowType = "hann",
-        int nperseg = 256,
+        int nperseg = -1,
         int noverlap = -1,
         int nfft = -1,
-        string scaling = "density")
+        string window = "hann",
+        string scaling = "density",
+        string detrend = "constant")
     {
-        var result = ComputeInternal(x, fs, windowType, nperseg, noverlap, nfft, scaling);
+        var result = ComputeInternal(
+            x,
+            fs: fs,
+            window: window,
+            nperseg: nperseg,
+            noverlap: noverlap,
+            nfft: nfft,
+            scaling: scaling,
+            detrend: detrend);
         return (result.frequencies, result.psd);
     }
 
     public static (double[] frequencies, double[] times, double[,] spectrogram) ComputeSpectrogram(
         double[] x,
         double fs = 1.0,
-        string windowType = "hann",
-        int nperseg = 256,
+        int nperseg = -1,
         int noverlap = -1,
         int nfft = -1,
-        string scaling = "density")
+        string window = "hann",
+        string scaling = "density",
+        string detrend = "constant")
     {
-        var result = ComputeInternal(x, fs, windowType, nperseg, noverlap, nfft, scaling);
+        var result = ComputeInternal(
+          x,
+          fs: fs,
+          window: window,
+          nperseg: nperseg,
+          noverlap: noverlap,
+          nfft: nfft,
+          scaling: scaling,
+          detrend: detrend);
         return (result.frequencies, result.times, result.spectrogram);
     }
 
@@ -39,24 +58,24 @@ public class WelchPSD
         double[,] spectrogram
         ) ComputeInternal(
         double[] x,
-        double fs,
-        string windowType,
-        int nperseg,
-        int noverlap,
-        int nfft,
-        string scaling)
+        double fs = 1.0,
+        int nperseg = -1,
+        int noverlap = -1,
+        int nfft = -1,
+        string window = "hann",
+        string scaling = "density",
+        string detrend = "constant")
     {
         // 参数验证与默认值设置
+        if (nperseg <= 0)
+            nperseg = 256;
+
         if (noverlap < 0)
             noverlap = nperseg / 2;  // 默认50%重叠
         if (nfft <= 0)
             nfft = nperseg;         // 默认FFT长度等于段长
         if (nfft < nperseg)
             throw new ArgumentException("nfft must be greater than or equal to nperseg");
-
-        // 生成窗函数
-        double[] window = GenerateWindow(windowType, nperseg);
-        double windowPower = window.Select(w => w * w).Sum();
 
         int step = nperseg - noverlap;
         int numSegments = (x.Length - nperseg) / step + 1;
@@ -66,12 +85,16 @@ public class WelchPSD
         double[] times = new double[numSegments];
         double[,] spectrogram = new double[numSegments, freqs.Length];
 
-        // 计算归一化因子
+        double[] win = GenerateWindow(window, nperseg);
         double scale;
-        if (scaling.ToLower() == "density")
-            scale = 1.0 / (fs * windowPower);
-        else // spectrum
-            scale = 1.0 / (window.Sum() * window.Sum());
+        if (scaling == "density")
+            scale = 1.0 / Math.Sqrt(fs * win.Select(w => w * w).Sum());
+        else if (scaling == "spectrum")
+            scale = 1.0 / (win.Sum() * win.Sum());
+        else
+            throw new ArgumentException($"Unexpected {detrend} type. Usage constant");
+
+        win = [.. win.Select(x => x * scale)];
 
         bool isEvenNfft = nfft % 2 == 0;
 
@@ -82,7 +105,16 @@ public class WelchPSD
             double[] segment = new double[nperseg];
             Array.Copy(x, i * step, segment, 0, nperseg);
 
-            ApplyWindow(segment, window);
+            // detrend
+            if (detrend == "constant")
+            {
+                double mean = segment.Average();
+                segment = [.. segment.Select(x => x - mean)];
+            }
+            else
+                throw new ArgumentException($"Unexpected {detrend} type. Usage constant");
+
+            ApplyWindow(segment, win);
 
             Complex[] padded = new Complex[nfft];
             for (int j = 0; j < nperseg; j++)
@@ -98,8 +130,6 @@ public class WelchPSD
                 bool isNyquist = (isEvenNfft && k == nfft / 2);
                 if (!isDC && !isNyquist)
                     magnitude *= 2;
-
-                magnitude *= scale;
 
                 spectrogram[i, k] = 10 * Math.Log10(magnitude + 1e-12);
 
