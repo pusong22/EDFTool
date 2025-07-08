@@ -23,13 +23,12 @@ public partial class CartesianChartView : UserControl, ICartesianChartView
         InitializeComponent();
 
         _cartesianChart = new CartesianChart(this);
-        _cartesianChart.RedrawHandler += OnRedrawHandler;
 
         ChartConfig.Configure(config => config.UseDefault());
 
-        _seriesWatcher = new CollectionWatcher<IEnumerable<ICartesianSeries>>(() => _cartesianChart?.Update());
-        _xAxesWatcher = new CollectionWatcher<IEnumerable<ICartesianAxis>>(() => _cartesianChart?.Update());
-        _yAxesWatcher = new CollectionWatcher<IEnumerable<ICartesianAxis>>(() => _cartesianChart?.Update());
+        _seriesWatcher = new CollectionWatcher<IEnumerable<ICartesianSeries>>(ReDraw);
+        _xAxesWatcher = new CollectionWatcher<IEnumerable<ICartesianAxis>>(ReDraw);
+        _yAxesWatcher = new CollectionWatcher<IEnumerable<ICartesianAxis>>(ReDraw);
 
         Loaded += OnLoad;
         Unloaded += OnUnLoad;
@@ -70,7 +69,7 @@ public partial class CartesianChartView : UserControl, ICartesianChartView
             {
                 if (d is CartesianChartView o)
                 {
-                    o._cartesianChart?.Update();
+                    o.ReDraw();
                 }
             }));
 
@@ -119,16 +118,34 @@ public partial class CartesianChartView : UserControl, ICartesianChartView
 
     #endregion
 
-    public Core.Primitive.Size ControlSize => new((float)ActualWidth, (float)ActualHeight);
-
-    public void InvokeUIThread(Action action)
+    public void ReDraw()
     {
-        Dispatcher.BeginInvoke(action);
+        var currentControlSize = new Core.Primitive.Size((float)_skElement.ActualWidth, (float)_skElement.ActualHeight);
+        var currentTitle = Title;
+        var currentXAxes = XAxes;
+        var currentYAxes = YAxes;
+        var currentSeries = Series;
+
+        _cartesianChart?.UpdateAsync(
+            currentControlSize,
+            currentTitle,
+            currentXAxes,
+            currentYAxes,
+            currentSeries);
+    }
+
+    public void RequestInvalidateVisual()
+    {
+        if (Dispatcher.CheckAccess())
+            _skElement.InvalidateVisual();
+        else
+            Dispatcher.BeginInvoke(() => _skElement.InvalidateVisual());
     }
 
     private void OnLoad(object sender, RoutedEventArgs e)
     {
         _cartesianChart?.Load();
+        ReDraw();
     }
 
     private void OnUnLoad(object sender, RoutedEventArgs e)
@@ -138,12 +155,7 @@ public partial class CartesianChartView : UserControl, ICartesianChartView
 
     private void OnSizeChanged(object sender, SizeChangedEventArgs e)
     {
-        _cartesianChart?.Update();
-    }
-
-    private void OnRedrawHandler(object sender, EventArgs e)
-    {
-        _skElement.InvalidateVisual();
+        ReDraw();
     }
 
     private void OnPaintSurface(object sender, SKPaintSurfaceEventArgs e)
