@@ -33,14 +33,17 @@ public class EDFStore
         }
     }
 
-    public double[] ReadPhysicalData(int index, int startRecord, int recordCount)
+    public async Task<double[]> ReadPhysicalData(int index,
+        int startRecord = -1,
+        int recordCount = -1)
     {
         if (_parser is null)
             throw new InvalidOperationException("_parser is not open.");
 
-        var buf = _parser.ReadSignalData(index, startRecord, recordCount);
+        if (startRecord < 0) startRecord = 0;
+        if (recordCount < 0) recordCount = _parser.NumberOfDataRecords;
 
-        return buf;
+        return await ReadInternal(index, startRecord, recordCount);
     }
 
     public double GetTotalDurationInSeconds()
@@ -51,13 +54,11 @@ public class EDFStore
         return _parser.NumberOfDataRecords * _parser.DurationOfDataRecordSeconds;
     }
 
-    public double[] ReadPhysicalData(int index)
+    private async Task<double[]> ReadInternal(int index, int startRecord, int recordCount)
     {
         if (_parser is null)
             throw new InvalidOperationException("_parser is not open.");
 
-        double[] buf = _parser.ReadSignalData(index, 0, _parser.NumberOfDataRecords);
-
-        return buf;
+        return await Task.Run(() => _parser.ReadSignalData(index, startRecord, recordCount));
     }
 }

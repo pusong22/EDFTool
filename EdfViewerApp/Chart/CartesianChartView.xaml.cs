@@ -17,6 +17,7 @@ public partial class CartesianChartView : UserControl, ICartesianChartView
     private readonly CollectionWatcher<IEnumerable<ICartesianAxis>> _yAxesWatcher;
 
     private readonly CartesianChart _cartesianChart;
+    private ChartDrawingCommand? _latestDrawCommand;
 
     public CartesianChartView()
     {
@@ -120,26 +121,23 @@ public partial class CartesianChartView : UserControl, ICartesianChartView
 
     public void ReDraw()
     {
-        var currentControlSize = new Core.Primitive.Size((float)_skElement.ActualWidth, (float)_skElement.ActualHeight);
-        var currentTitle = Title;
-        var currentXAxes = XAxes;
-        var currentYAxes = YAxes;
-        var currentSeries = Series;
+        ChatModelSnapshot snapshot = new()
+        {
+            ControlSize = new Core.Primitive.Size((float)_skElement.ActualWidth, (float)_skElement.ActualHeight),
+            Title = Title,
+            XAxes = XAxes,
+            YAxes = YAxes,
+            Series = Series,
+        };
 
-        _cartesianChart?.UpdateAsync(
-            currentControlSize,
-            currentTitle,
-            currentXAxes,
-            currentYAxes,
-            currentSeries);
+        _cartesianChart?.UpdateAsync(snapshot);
     }
 
-    public void RequestInvalidateVisual()
+    public void RequestInvalidateVisual(ChartDrawingCommand command)
     {
-        if (Dispatcher.CheckAccess())
-            _skElement.InvalidateVisual();
-        else
-            Dispatcher.BeginInvoke(() => _skElement.InvalidateVisual());
+        _latestDrawCommand = command;
+
+        _skElement?.InvalidateVisual();
     }
 
     private void OnLoad(object sender, RoutedEventArgs e)
@@ -151,6 +149,7 @@ public partial class CartesianChartView : UserControl, ICartesianChartView
     private void OnUnLoad(object sender, RoutedEventArgs e)
     {
         _cartesianChart?.UnLoad();
+        _latestDrawCommand = null;
     }
 
     private void OnSizeChanged(object sender, SizeChangedEventArgs e)
@@ -160,7 +159,12 @@ public partial class CartesianChartView : UserControl, ICartesianChartView
 
     private void OnPaintSurface(object sender, SKPaintSurfaceEventArgs e)
     {
-        var context = new SkiaSharpDrawnContext(e.Surface, e.Info);
-        _cartesianChart?.DrawFrame(context);
+        if (!IsLoaded || _latestDrawCommand is null) return;
+
+        SkiaSharpDrawnContext context = new(e.Surface, e.Info);
+
+        ChartDrawingCommand commandToExecute = _latestDrawCommand;
+
+        commandToExecute.Execute(context);
     }
 }

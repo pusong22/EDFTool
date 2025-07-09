@@ -74,7 +74,7 @@ public partial class LineSeriesViewModel : BaseViewModel,
         }, token);
     }
 
-    private void LoadDataAt(double time)
+    private async void LoadDataAt(double time)
     {
         double actualTime = time * _step;
         if (actualTime >= TimeMaximum)
@@ -84,7 +84,7 @@ public partial class LineSeriesViewModel : BaseViewModel,
         {
             var signal = _currentSelectedSignals[i];
 
-            var buf = _edfStore.ReadPhysicalData(signal.Id, (int)actualTime, _step);
+            var buf = await _edfStore.ReadPhysicalData(signal.Id, (int)actualTime, _step);
 
             var series = Series[i];
             series.XOffset = actualTime;

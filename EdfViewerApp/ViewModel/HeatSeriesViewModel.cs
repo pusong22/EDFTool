@@ -56,6 +56,9 @@ public partial class HeatSeriesViewModel(EDFStore edfStore) : BaseViewModel
     [ObservableProperty]
     private SignalViewModel? _selectedChannel;
 
+    [ObservableProperty]
+    private bool _loading = false;
+
     [RelayCommand]
     private void LoadChannels()
     {
@@ -67,10 +70,17 @@ public partial class HeatSeriesViewModel(EDFStore edfStore) : BaseViewModel
 
     partial void OnSelectedChannelChanged(SignalViewModel? signalVM)
     {
+        _ = LoadChannelDataAsync(signalVM);
+    }
+
+    private async Task LoadChannelDataAsync(SignalViewModel? signalVM)
+    {
         if (signalVM is null) return;
 
+        Loading = true;
         // 耗时
-        double[] buf = edfStore.ReadPhysicalData(signalVM.Id);
+        double[] buf = await edfStore.ReadPhysicalData(signalVM.Id);
+
         // 耗时!!!
         //double[] filterCoefficients = FirCoefficients.BandPass(value.SampleRate, 0.5, 50.0, 0);
         //OnlineFirFilter filter = new(filterCoefficients);
@@ -81,33 +91,40 @@ public partial class HeatSeriesViewModel(EDFStore edfStore) : BaseViewModel
         //}
 
         // 耗时
-        (double[] freqs, double[] times, double[,] spectrogram) =
-            WelchPSD.ComputeSpectrogram(
-            buf,
-            fs: 500,
-            nperseg: 500,
-            noverlap: 250);
-
-        List<Coordinate> data = new();
-        for (int r = 0; r < spectrogram.GetLength(0); r++)
+        List<Coordinate> data = await Task.Run(() =>
         {
-            double currentTimeSeconds = times[r];
+            List<Coordinate> result = [];
+            (double[] freqs, double[] times, double[,] spectrogram) =
+               WelchPSD.ComputeSpectrogram(
+               buf,
+               fs: 500,
+               nperseg: 500,
+               noverlap: 250);
 
-            for (int c = 0; c < spectrogram.GetLength(1); c++)
+            for (int r = 0; r < spectrogram.GetLength(0); r++)
             {
-                double currentFrequencyHz = freqs[c];
+                double currentTimeSeconds = times[r];
 
-                // 耗时ui卡顿
-                if (currentFrequencyHz < 0 || currentFrequencyHz > 31.0)
-                    continue;
+                for (int c = 0; c < spectrogram.GetLength(1); c++)
+                {
+                    double currentFrequencyHz = freqs[c];
 
-                double power = spectrogram[r, c];
+                    // 耗时ui卡顿
+                    if (currentFrequencyHz < 0 || currentFrequencyHz > 31.0)
+                        continue;
 
-                if (power > double.MinValue)
-                    data.Add(new(currentTimeSeconds, currentFrequencyHz, power));
+                    double power = spectrogram[r, c];
+
+                    if (power > double.MinValue)
+                        result.Add(new(currentTimeSeconds, currentFrequencyHz, power));
+                }
             }
-        }
+
+            return result;
+        });
 
         Series[0].Data = [.. data];
+
+        Loading = false;
     }
 }
