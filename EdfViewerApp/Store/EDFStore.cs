@@ -5,10 +5,10 @@ namespace EdfViewerApp.Store;
 public class EDFStore
 {
     private EdfParser? _parser;
+    public List<SignalViewModel> SignalVMs { get; private set; } = [];
 
     public bool Open { get; private set; }
     public string? EdfFilePath { get; private set; }
-    public event EventHandler? InitializeTimeRangeHandler;
 
     public void OpenFile(string filePath)
     {
@@ -17,35 +17,33 @@ public class EDFStore
         Open = true;
         EdfFilePath = filePath;
 
-        InitializeTimeRangeHandler?.Invoke(this, EventArgs.Empty);
-    }
-
-    public IEnumerable<SignalViewModel> ReadInfo()
-    {
-        if (_parser is null)
-            throw new InvalidOperationException("_parser is not open.");
-
         int id = 0;
 
+        SignalVMs.Clear();
         foreach (var signalInfo in _parser.Signals)
         {
-            yield return new SignalViewModel()
+            SignalViewModel vm = new()
             {
                 Id = id++,
                 Label = signalInfo.Label,
                 SampleRate = signalInfo.SampleRate,
             };
+
+            SignalVMs.Add(vm);
         }
     }
 
-    public double[] ReadPhysicalData(int index, int startRecord, int recordCount)
+    public async Task<double[]> ReadPhysicalData(int index,
+        int startRecord = -1,
+        int recordCount = -1)
     {
         if (_parser is null)
             throw new InvalidOperationException("_parser is not open.");
 
-        var buf = _parser.ReadSignalData(index, startRecord, recordCount);
+        if (startRecord < 0) startRecord = 0;
+        if (recordCount < 0) recordCount = _parser.NumberOfDataRecords;
 
-        return buf;
+        return await ReadInternal(index, startRecord, recordCount);
     }
 
     public double GetTotalDurationInSeconds()
@@ -54,5 +52,13 @@ public class EDFStore
             throw new InvalidOperationException("_parser is not open.");
 
         return _parser.NumberOfDataRecords * _parser.DurationOfDataRecordSeconds;
+    }
+
+    private async Task<double[]> ReadInternal(int index, int startRecord, int recordCount)
+    {
+        if (_parser is null)
+            throw new InvalidOperationException("_parser is not open.");
+
+        return await Task.Run(() => _parser.ReadSignalData(index, startRecord, recordCount));
     }
 }

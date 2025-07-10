@@ -12,8 +12,11 @@ namespace EdfViewerApp.ViewModel;
 public partial class LineSeriesViewModel : BaseViewModel,
     IRecipient<ValueChangedMessage<IEnumerable<SignalViewModel>>>
 {
+    private const int _step = 10;
+    private bool _resetThumb = false;
     private readonly EDFStore _edfStore;
     private CancellationTokenSource? _debouncingCts;
+    private List<SignalViewModel> _currentSelectedSignals = [];
 
     [ObservableProperty]
     private ObservableCollection<Axis> _xAxes = [];
@@ -25,14 +28,6 @@ public partial class LineSeriesViewModel : BaseViewModel,
     private ObservableCollection<LineSeriesProxy> _series = [];
 
     [ObservableProperty]
-    private LabelVisual _title = new()
-    {
-        Text = "Test",
-        TextPaint = new Brush() { FontSize = 18 },
-    };
-
-
-    [ObservableProperty]
     private double _timeMinimum = 0d;
 
     [ObservableProperty]
@@ -40,28 +35,32 @@ public partial class LineSeriesViewModel : BaseViewModel,
 
     [ObservableProperty]
     private double _currentTime;
-    private List<SignalViewModel> _currentSelectedSignals = [];
+
+    [ObservableProperty]
+    private bool _isBatchUpdating;
 
     public LineSeriesViewModel(EDFStore edfStore)
     {
         WeakReferenceMessenger.Default.Register(this);
 
         _edfStore = edfStore;
-        _edfStore.InitializeTimeRangeHandler += InitializeTimeRange;
     }
 
-    private void InitializeTimeRange(object s, EventArgs e)
+    private void ResetThumb()
     {
-        double totalDuration = _edfStore.GetTotalDurationInSeconds(); // Example method
-        TimeMinimum = 0; // EDF typically starts at time 0
-        TimeMaximum = totalDuration;
+        _resetThumb = true;
+        double totalDuration = _edfStore.GetTotalDurationInSeconds();
+        TimeMinimum = 0;
+        TimeMaximum = totalDuration / _step;
 
-        // Adjust the slider's initial position to the beginning
-        CurrentTime = TimeMinimum; // This will trigger OnCurrentTimeChanged and load initial data
+        CurrentTime = 0;
+        _resetThumb = false;
     }
 
     partial void OnCurrentTimeChanged(double value)
     {
+        if (_resetThumb) return;
+
         if (value >= TimeMaximum) return;
 
         // debouncing
@@ -78,14 +77,20 @@ public partial class LineSeriesViewModel : BaseViewModel,
         }, token);
     }
 
-    private void LoadDataAt(double time)
+    private async void LoadDataAt(double time)
     {
+        double actualTime = time * _step;
+        if (actualTime >= TimeMaximum)
+            actualTime -= _step;
+
         for (int i = 0; i < _currentSelectedSignals.Count; i++)
         {
-            var buf = _edfStore.ReadPhysicalData(_currentSelectedSignals[i].Id, (int)time, 10);
+            var signal = _currentSelectedSignals[i];
+
+            var buf = await _edfStore.ReadPhysicalData(signal.Id, (int)actualTime, _step);
 
             var series = Series[i];
-            series.XOffset = time;
+            series.XOffset = actualTime;
             series.Data = [.. buf];
         }
     }
@@ -102,15 +107,18 @@ public partial class LineSeriesViewModel : BaseViewModel,
 
     public void Receive(ValueChangedMessage<IEnumerable<SignalViewModel>> message)
     {
+        // Reset thumb
+        ResetThumb();
+
         _currentSelectedSignals = [.. message.Value]; // Store selected signals for later use
+
+        IsBatchUpdating = true;
 
         XAxes.Clear();
         XAxes.Add(new Axis()
         {
-            Name = "Time",
-            NamePaint = new Brush(),
+            LabelPaint = new Brush(),
             AxisLinePaint = new Pen(),
-            SeparatorPaint = new Pen(new DashEffectSetting([3, 3])),
             Labeler = l => l.ToString("N2")
         });
 
@@ -122,7 +130,6 @@ public partial class LineSeriesViewModel : BaseViewModel,
                 Name = item.Label,
                 NamePaint = new Brush(),
                 AxisLinePaint = new Pen(),
-                SeparatorPaint = new Pen(new DashEffectSetting([3, 3])),
                 Labeler = l => l.ToString("N2"),
             });
         }
@@ -138,6 +145,8 @@ public partial class LineSeriesViewModel : BaseViewModel,
                 SampleInterval = 1d / item.SampleRate,
             });
         }
+
+        IsBatchUpdating = false;
     }
 
     protected override void Dispose(bool disposing)

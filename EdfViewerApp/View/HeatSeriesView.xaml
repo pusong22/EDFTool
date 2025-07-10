@@ -7,11 +7,77 @@
              mc:Ignorable="d" 
              xmlns:chart="clr-namespace:EdfViewerApp.Chart"
              xmlns:vm="clr-namespace:EdfViewerApp.ViewModel" 
+             xmlns:cv="clr-namespace:EdfViewerApp.Converter"
              d:DataContext="{d:DesignInstance Type=vm:HeatSeriesViewModel}"
              d:DesignHeight="450" d:DesignWidth="800">
-    
-    <chart:CartesianChartView
-        XAxes="{Binding XAxes}"
-        YAxes="{Binding YAxes}"
-        Series="{Binding Series}"/>
+
+    <UserControl.Resources>
+        <cv:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        <Style x:Key="SpinnerStyle" TargetType="Ellipse">
+            <Setter Property="Width" Value="30"/>
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Stroke" Value="Gray"/>
+            <Setter Property="StrokeThickness" Value="4"/>
+            <Setter Property="StrokeDashArray" Value="1, 2"/>
+            <Setter Property="RenderTransformOrigin" Value="0.5, 0.5"/>
+            <Setter Property="RenderTransform">
+                <Setter.Value>
+                    <RotateTransform x:Name="rt" Angle="0"/>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Opacity" Value="0.9"/>
+            <Style.Triggers>
+                <Trigger Property="Visibility" Value="Visible">
+                    <Trigger.EnterActions>
+                        <BeginStoryboard>
+                            <Storyboard RepeatBehavior="Forever">
+                                <DoubleAnimation
+                                    Storyboard.TargetProperty="(UIElement.RenderTransform).(RotateTransform.Angle)"
+                                    From="0" To="360"
+                                    Duration="0:0:1">
+                                    <DoubleAnimation.EasingFunction>
+                                        <ExponentialEase EasingMode="EaseIn" Exponent="2"/>
+                                    </DoubleAnimation.EasingFunction>
+                                </DoubleAnimation>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </Trigger.EnterActions>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="auto"/>
+        </Grid.RowDefinitions>
+
+        <ComboBox 
+            Grid.Row="0"
+            MaxWidth="100"
+            ItemsSource="{Binding Channels}"
+            DisplayMemberPath="Label"
+            SelectedItem="{Binding SelectedChannel}"/>
+
+        <chart:CartesianChartView
+            Grid.Row="1"
+            XAxes="{Binding XAxes}"
+            YAxes="{Binding YAxes}"
+            Series="{Binding Series}"/>
+
+        <Grid Grid.RowSpan="3" 
+              Background="#80FFFFFF"  
+              Visibility="{Binding Loading, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Ellipse Style="{StaticResource SpinnerStyle}" Margin="0,0,0,10"/>
+            <TextBlock Text="加载中..."
+                   FontSize="18"
+                   Foreground="Black"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   Margin="0,120,0,0"/>
+        </Grid>
+    </Grid>
+
 </UserControl>

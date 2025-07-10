@@ -20,10 +20,13 @@
 
         <chart:CartesianChartView
             Grid.Row="0"
-            Title="{Binding Title}"
             XAxes="{Binding XAxes}"
             YAxes="{Binding YAxes}"
-            Series="{Binding Series}"/>
+            Series="{Binding Series}">
+            <i:Interaction.Behaviors>
+                <hr:BatchUpdateBehavior IsBatchUpdating="{Binding IsBatchUpdating}" />
+            </i:Interaction.Behaviors>
+        </chart:CartesianChartView>
 
         <Slider Grid.Row="1"
                 Margin="5"

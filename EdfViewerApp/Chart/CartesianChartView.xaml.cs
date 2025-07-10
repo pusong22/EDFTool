@@ -17,19 +17,22 @@ public partial class CartesianChartView : UserControl, ICartesianChartView
     private readonly CollectionWatcher<IEnumerable<ICartesianAxis>> _yAxesWatcher;
 
     private readonly CartesianChart _cartesianChart;
+    private ChartDrawingCommand? _latestDrawCommand;
+    private int _updateLock = 0;
+    private bool _hasPendingReDraw = false; // 是否执行过redraw
+
 
     public CartesianChartView()
     {
         InitializeComponent();
 
         _cartesianChart = new CartesianChart(this);
-        _cartesianChart.RedrawHandler += OnRedrawHandler;
 
         ChartConfig.Configure(config => config.UseDefault());
 
-        _seriesWatcher = new CollectionWatcher<IEnumerable<ICartesianSeries>>(() => _cartesianChart?.Update());
-        _xAxesWatcher = new CollectionWatcher<IEnumerable<ICartesianAxis>>(() => _cartesianChart?.Update());
-        _yAxesWatcher = new CollectionWatcher<IEnumerable<ICartesianAxis>>(() => _cartesianChart?.Update());
+        _seriesWatcher = new CollectionWatcher<IEnumerable<ICartesianSeries>>(ReDraw);
+        _xAxesWatcher = new CollectionWatcher<IEnumerable<ICartesianAxis>>(ReDraw);
+        _yAxesWatcher = new CollectionWatcher<IEnumerable<ICartesianAxis>>(ReDraw);
 
         Loaded += OnLoad;
         Unloaded += OnUnLoad;
@@ -70,7 +73,7 @@ public partial class CartesianChartView : UserControl, ICartesianChartView
             {
                 if (d is CartesianChartView o)
                 {
-                    o._cartesianChart?.Update();
+                    o.ReDraw();
                 }
             }));
 
@@ -119,36 +122,82 @@ public partial class CartesianChartView : UserControl, ICartesianChartView
 
     #endregion
 
-    public Core.Primitive.Size ControlSize => new((float)ActualWidth, (float)ActualHeight);
-
-    public void InvokeUIThread(Action action)
+    public void BeginUpdate()
     {
-        Dispatcher.BeginInvoke(action);
+        Interlocked.Increment(ref _updateLock);
+    }
+
+    public void EndUpdate()
+    {
+        if (Interlocked.Decrement(ref _updateLock) == 0 && _hasPendingReDraw)
+        {
+            _hasPendingReDraw = false;
+            ReDraw();
+        }
+    }
+
+    public void ReDraw()
+    {
+        if (_updateLock > 0)
+        {
+            _hasPendingReDraw = true;
+            return;
+        }
+
+        if (Dispatcher.CheckAccess())
+        {
+            ChatModelSnapshot snapshot = new()
+            {
+                ControlSize = new Core.Primitive.Size((float)_skElement.ActualWidth, (float)_skElement.ActualHeight),
+                Title = Title,
+                XAxes = XAxes,
+                YAxes = YAxes,
+                Series = Series,
+            };
+
+            _cartesianChart?.UpdateAsync(snapshot);
+        }
+        else
+            Dispatcher.BeginInvoke(() => ReDraw());
+    }
+
+    public void RequestInvalidateVisual(ChartDrawingCommand command)
+    {
+        if (Dispatcher.CheckAccess())
+        {
+            _latestDrawCommand = command;
+
+            _skElement?.InvalidateVisual();
+        }
+        else
+            Dispatcher.BeginInvoke(() => RequestInvalidateVisual(command));
     }
 
     private void OnLoad(object sender, RoutedEventArgs e)
     {
         _cartesianChart?.Load();
+        ReDraw();
     }
 
     private void OnUnLoad(object sender, RoutedEventArgs e)
     {
         _cartesianChart?.UnLoad();
+        _latestDrawCommand = null;
     }
 
     private void OnSizeChanged(object sender, SizeChangedEventArgs e)
     {
-        _cartesianChart?.Update();
-    }
-
-    private void OnRedrawHandler(object sender, EventArgs e)
-    {
-        _skElement.InvalidateVisual();
+        ReDraw();
     }
 
     private void OnPaintSurface(object sender, SKPaintSurfaceEventArgs e)
     {
-        var context = new SkiaSharpDrawnContext(e.Surface, e.Info);
-        _cartesianChart?.DrawFrame(context);
+        if (!IsLoaded || _latestDrawCommand is null) return;
+
+        SkiaSharpDrawnContext context = new(e.Surface, e.Info);
+
+        ChartDrawingCommand commandToExecute = _latestDrawCommand;
+
+        commandToExecute.Execute(context);
     }
 }
