@@ -18,6 +18,9 @@ public partial class CartesianChartView : UserControl, ICartesianChartView
 
     private readonly CartesianChart _cartesianChart;
     private ChartDrawingCommand? _latestDrawCommand;
+    private int _updateLock = 0;
+    private bool _hasPendingReDraw = false; // 是否执行过redraw
+
 
     public CartesianChartView()
     {
@@ -119,25 +122,55 @@ public partial class CartesianChartView : UserControl, ICartesianChartView
 
     #endregion
 
+    public void BeginUpdate()
+    {
+        Interlocked.Increment(ref _updateLock);
+    }
+
+    public void EndUpdate()
+    {
+        if (Interlocked.Decrement(ref _updateLock) == 0 && _hasPendingReDraw)
+        {
+            _hasPendingReDraw = false;
+            ReDraw();
+        }
+    }
+
     public void ReDraw()
     {
-        ChatModelSnapshot snapshot = new()
+        if (_updateLock > 0)
         {
-            ControlSize = new Core.Primitive.Size((float)_skElement.ActualWidth, (float)_skElement.ActualHeight),
-            Title = Title,
-            XAxes = XAxes,
-            YAxes = YAxes,
-            Series = Series,
-        };
+            _hasPendingReDraw = true;
+            return;
+        }
 
-        _cartesianChart?.UpdateAsync(snapshot);
+        if (Dispatcher.CheckAccess())
+        {
+            ChatModelSnapshot snapshot = new()
+            {
+                ControlSize = new Core.Primitive.Size((float)_skElement.ActualWidth, (float)_skElement.ActualHeight),
+                Title = Title,
+                XAxes = XAxes,
+                YAxes = YAxes,
+                Series = Series,
+            };
+
+            _cartesianChart?.UpdateAsync(snapshot);
+        }
+        else
+            Dispatcher.BeginInvoke(() => ReDraw());
     }
 
     public void RequestInvalidateVisual(ChartDrawingCommand command)
     {
-        _latestDrawCommand = command;
+        if (Dispatcher.CheckAccess())
+        {
+            _latestDrawCommand = command;
 
-        _skElement?.InvalidateVisual();
+            _skElement?.InvalidateVisual();
+        }
+        else
+            Dispatcher.BeginInvoke(() => RequestInvalidateVisual(command));
     }
 
     private void OnLoad(object sender, RoutedEventArgs e)

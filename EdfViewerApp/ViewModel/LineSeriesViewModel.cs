@@ -36,6 +36,9 @@ public partial class LineSeriesViewModel : BaseViewModel,
     [ObservableProperty]
     private double _currentTime;
 
+    [ObservableProperty]
+    private bool _isBatchUpdating;
+
     public LineSeriesViewModel(EDFStore edfStore)
     {
         WeakReferenceMessenger.Default.Register(this);
@@ -109,6 +112,8 @@ public partial class LineSeriesViewModel : BaseViewModel,
 
         _currentSelectedSignals = [.. message.Value]; // Store selected signals for later use
 
+        IsBatchUpdating = true;
+
         XAxes.Clear();
         XAxes.Add(new Axis()
         {
@@ -140,6 +145,8 @@ public partial class LineSeriesViewModel : BaseViewModel,
                 SampleInterval = 1d / item.SampleRate,
             });
         }
+
+        IsBatchUpdating = false;
     }
 
     protected override void Dispose(bool disposing)
