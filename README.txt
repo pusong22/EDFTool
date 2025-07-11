@@ -1,13 +1,11 @@
 # TODO
 - [X] monitor axes and series in core.
 - [X] Read progress,debouncing when draging the slider stumb
-- [] optimize reading
-- [] optimize ploting
+- [X] optimize reading
+- [X] optimize ploting
 - [x] psd algrothim
 - [x] 时间-频率二维热力图（Spectrogram）
-- [] 通道-频段二维热力图
-- [] 空间-时间二维热力图
-- [] 脑图实现
+- [] 优化界面交互
 
 
 # QEEG(Quantitative Electroencephalogram)
