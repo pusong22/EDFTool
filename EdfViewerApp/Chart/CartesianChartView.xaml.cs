@@ -10,7 +10,7 @@ namespace EdfViewerApp.Chart;
 /// <summary>
 /// Interaction logic for CartesianChartView.xaml
 /// </summary>
-public partial class CartesianChartView : UserControl, ICartesianChartView
+public partial class CartesianChartView : UserControl
 {
     private readonly CollectionWatcher<IEnumerable<ICartesianSeries>> _seriesWatcher;
     private readonly CollectionWatcher<IEnumerable<ICartesianAxis>> _xAxesWatcher;
@@ -20,13 +20,13 @@ public partial class CartesianChartView : UserControl, ICartesianChartView
     private ChartDrawingCommand? _latestDrawCommand;
     private int _updateLock = 0;
     private bool _hasPendingReDraw = false; // 是否执行过redraw
-
+    private CancellationTokenSource? _resizeDebounceCts;
 
     public CartesianChartView()
     {
         InitializeComponent();
 
-        _cartesianChart = new CartesianChart(this);
+        _cartesianChart = new CartesianChart();
 
         ChartConfig.Configure(config => config.UseDefault());
 
@@ -136,41 +136,34 @@ public partial class CartesianChartView : UserControl, ICartesianChartView
         }
     }
 
-    public void ReDraw()
+    public async void ReDraw()
     {
+        if (_cartesianChart is null) return;
+
         if (_updateLock > 0)
         {
             _hasPendingReDraw = true;
             return;
         }
 
-        if (Dispatcher.CheckAccess())
+        if (!Dispatcher.CheckAccess())
         {
-            ChatModelSnapshot snapshot = new()
-            {
-                ControlSize = new Core.Primitive.Size((float)_skElement.ActualWidth, (float)_skElement.ActualHeight),
-                Title = Title,
-                XAxes = XAxes,
-                YAxes = YAxes,
-                Series = Series,
-            };
-
-            _cartesianChart?.UpdateAsync(snapshot);
+            await Dispatcher.InvokeAsync(ReDraw, System.Windows.Threading.DispatcherPriority.Render);
+            return;
         }
-        else
-            Dispatcher.BeginInvoke(() => ReDraw());
-    }
 
-    public void RequestInvalidateVisual(ChartDrawingCommand command)
-    {
-        if (Dispatcher.CheckAccess())
+        ChatModelSnapshot snapshot = new()
         {
-            _latestDrawCommand = command;
+            ControlSize = new Core.Primitive.Size((float)_skElement.ActualWidth, (float)_skElement.ActualHeight),
+            Title = Title,
+            XAxes = XAxes,
+            YAxes = YAxes,
+            Series = Series,
+        };
 
-            _skElement?.InvalidateVisual();
-        }
-        else
-            Dispatcher.BeginInvoke(() => RequestInvalidateVisual(command));
+        _latestDrawCommand = await _cartesianChart.UpdateAsync(snapshot);
+
+        _skElement?.InvalidateVisual();
     }
 
     private void OnLoad(object sender, RoutedEventArgs e)
@@ -187,7 +180,21 @@ public partial class CartesianChartView : UserControl, ICartesianChartView
 
     private void OnSizeChanged(object sender, SizeChangedEventArgs e)
     {
-        ReDraw();
+        _resizeDebounceCts?.Cancel();
+        _resizeDebounceCts = new CancellationTokenSource();
+        var token = _resizeDebounceCts.Token;
+
+        _ = Task.Delay(200, token).ContinueWith(t =>
+        {
+            if (t.IsCanceled) return;
+            Dispatcher.Invoke(() =>
+            {
+                if (_updateLock > 0)
+                    _hasPendingReDraw = true;
+                else
+                    ReDraw();
+            });
+        }, TaskScheduler.Default);
     }
 
     private void OnPaintSurface(object sender, SKPaintSurfaceEventArgs e)

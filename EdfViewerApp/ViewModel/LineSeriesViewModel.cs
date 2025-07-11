@@ -82,7 +82,9 @@ public partial class LineSeriesViewModel : BaseViewModel,
         double actualTime = time * _step;
         if (actualTime >= TimeMaximum)
             actualTime -= _step;
-
+        
+        IsBatchUpdating = true;
+        
         for (int i = 0; i < _currentSelectedSignals.Count; i++)
         {
             var signal = _currentSelectedSignals[i];
@@ -93,6 +95,8 @@ public partial class LineSeriesViewModel : BaseViewModel,
             series.XOffset = actualTime;
             series.Data = [.. buf];
         }
+
+        IsBatchUpdating = false;
     }
 
     [RelayCommand]
